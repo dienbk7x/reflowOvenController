@@ -4,6 +4,7 @@ Reflow Oven Controller
 
 **News**
 
+* Forked from Dasaki, and reorganized and changed the code to work with bluepill
 * Forked from 0xPIT & uploaded the code after a lot of restructuration
 * Board design has also changed
 
@@ -19,8 +20,11 @@ Reflow Oven Controller
 * simple, small hardware to drive loads up to 600V and up to 2A without heatsink
 * powered throuhg one of three options: 12v RAW pin, 5v pin or 5v USB
 * optional 12v fan control (not yet implemented in the code)
-* *Please Note*: Requires Arduino IDE 1.5.x or newer
+* *Please Note*: This repository contains an Eclipse Project, can be compiled with
+  Sloeber, or Arduino.
 
+
+(c) 2017 Victor Perez
 (c) 2017 David Sanz Kirbis
 (c) 2014 Karl Pitrich <karl@pitrich.com>
 in part based on a project (c) 2013 Ed Simmons <ed@estechnical.co.uk>
