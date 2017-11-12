@@ -42,6 +42,11 @@
 			<location>C:/Users/Victor/Documents/Arduino/Hardware/Arduino_STM32/STM32F1/variants/generic_stm32f103c</location>
 		</link>
 		<link>
+			<name>libraries/Adafruit-GFX-Library</name>
+			<type>2</type>
+			<location>C:/Users/Victor/Documents/Arduino/libraries/Adafruit-GFX-Library</location>
+		</link>
+		<link>
 			<name>libraries/Adafruit-GFX-Library-master</name>
 			<type>2</type>
 			<location>C:/Users/Victor/Documents/Arduino/libraries/Adafruit-GFX-Library-master</location>

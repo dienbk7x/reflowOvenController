@@ -43,13 +43,13 @@ static const uint8_t LCD_ROTATION = 3; // 0/2-> portrait, 1/3-> landscape
 static const uint8_t PIN_TC_CS   = PA4;
 static const uint8_t PIN_TC_DO   = PA7;
 static const uint8_t PIN_TC_CLK  = PA5;
-static const uint8_t PIN_HEATER = PA1; //
-static const uint8_t PIN_FAN    = PA0; //
-static const uint8_t PIN_BEEPER = PA8; // Beeper Out
+static const uint8_t PIN_HEATER = PA0; //
+static const uint8_t PIN_FAN    = PA8; //
+static const uint8_t PIN_BEEPER = PB9; // Beeper Out
 // --- encoder
 static const uint8_t PIN_ENC_A           = PA2; //
 static const uint8_t PIN_ENC_B           = PA3; //
-static const uint8_t PIN_ENC_BTN         = PA4; //
+static const uint8_t PIN_ENC_BTN         = PA1; //
 static const uint8_t ENC_STEPS_PER_NOTCH = 4;
 static const boolean IS_ENC_ACTIVE       = false; // encoder module actively fed with VCC ( seems to works bad if set to true )
 

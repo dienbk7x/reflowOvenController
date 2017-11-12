@@ -310,7 +310,7 @@ class TFT_ILI9163C : public Adafruit_GFX {
 	TFT_ILI9163C(const uint8_t& CS, const uint8_t& DC);//connect rst pin to VDD
 
 	void     	begin(void),
-	            begin(SPIClass& spi),
+	            begin(SPIClass* spi),
 				setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1),//graphic Addressing
 				setCursor(int16_t x,int16_t y),//char addressing
 				pushColor(uint16_t color),
@@ -365,7 +365,7 @@ class TFT_ILI9163C : public Adafruit_GFX {
 	void 		setAddr(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1);
 	void 		endProc(void);
 	uint8_t		sleep = 0;
-	SPIClass    & _SPI = SPI;
+	SPIClass    *_SPI = &SPI;
 
 
 	#if defined(__MK20DX128__) || defined(__MK20DX256__)

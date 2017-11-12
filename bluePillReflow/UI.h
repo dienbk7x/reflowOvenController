@@ -37,7 +37,7 @@ TFT_ILI9163C tft = TFT_ILI9163C(PIN_LCD_CS, PIN_LCD_DC, PIN_LCD_RST);    // PDQ:
 Menu::Engine MenuEngine;
 
 const uint8_t menuItemHeight = 12;
-const uint8_t menuItemsVisible = 8;
+const uint8_t menuItemsVisible = 10;
 bool menuUpdateRequest = true;
 bool initialProcessDisplay = false;
 
@@ -72,7 +72,7 @@ void setupTFT() {
   delay(1);
   FastPin<ST7735_RST_PIN>::hi();
 */
-  tft.begin(tftSPI);
+  tft.begin(&tftSPI);
   tft.setTextWrap(false);
   tft.setTextSize(1);
   tft.setRotation(LCD_ROTATION);
@@ -160,7 +160,6 @@ void alignRightPrefix(uint16_t v) {
   if (v < 1e2) tft.print(' '); 
   if (v < 1e1) tft.print(' ');
 }
-
 // ----------------------------------------------------------------------------
 
 void displayThermocoupleData(uint8_t xpos, uint8_t ypos) {
@@ -200,7 +199,7 @@ extern const Menu::Item_t miRampUpRate, miRampDnRate, miSoakTime,
                           miSoakTempA, miSoakTempB, miPeakTime, miPeakTemp,
                           miLoadProfile, miSaveProfile,
                           miPidSettingP, miPidSettingI, miPidSettingD,
-                          miFanSettings;
+                          miFanSettings, miFactoryReset;
 
 
 // ----------------------------------------------------------------------------
@@ -307,7 +306,7 @@ bool menu_editNumericalValue(const Menu::Action_t action) {
         uint8_t y = currentlyRenderedItems[i].pos * menuItemHeight + 2;
 
         if (initial) {
-          tft.fillRect(59+MENU_TEXT_XPOS, y - 1, 60, menuItemHeight - 2, RED);
+          tft.fillRect(59+MENU_TEXT_XPOS, y - 1, 40, menuItemHeight - 2, RED);
         }
 
         tft.setCursor(60+MENU_TEXT_XPOS, y);
@@ -478,6 +477,9 @@ void loadProfile(unsigned int targetProfile) {
 
   // save in any way, as we have no undo
   activeProfileId = targetProfile;
+  /*
+   * TODO: is this save necessary? just seems to overwrite the profile for no reason
+   */
   saveLastUsedProfile();
 
   delay(500);
@@ -630,6 +632,9 @@ void drawInitialProcessDisplay()
     tft.fillRect(0, 0, tft.width(), menuItemHeight, BLUE);
     tft.setCursor(1, 2);
 #ifndef PIDTUNE
+    /*
+     * TODO: print profile name
+     */
     tft.print("Profile ");
     tft.print(activeProfileId);
 #else

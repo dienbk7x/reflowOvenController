@@ -13,8 +13,8 @@ void readThermocouple() {
 
 //  uint8_t lcdState = digitalState(PIN_LCD_CS);
 //  digitalHigh(PIN_LCD_CS);
-  digitalLow(PIN_TC_CS);
-  delay(1);
+  //digitalLow(PIN_TC_CS);
+  //delay(1);
   float reading = thermocouple.readCelsius();
    
   if (reading == NAN) {
@@ -29,7 +29,7 @@ void readThermocouple() {
        Serial.print("temp: ");
        Serial.println(round(temperature));
 #endif
-  digitalHigh(PIN_TC_CS); 
+  //digitalHigh(PIN_TC_CS);
 
 /*  if (lcdState == 0) digitalLow(PIN_LCD_CS);
   else digitalHigh(PIN_LCD_CS);

@@ -159,11 +159,12 @@ void zeroCrossingIsr(void) {
   // reset phase control timer
   phaseCounter = 0;
 
+ /* This would serve to resynch the timerIsr with the zero crossing
   Timer1.pause();
   Timer1.setCount(0);
   Timer1.refresh();
   Timer1.resume();
-
+*/
 
   zeroCrossTicks++;
 
@@ -220,6 +221,12 @@ void timerIsr(void) { // ticks with 100µS
   if (!(timerTicks % 10)) {
     Encoder.service();
   }
+  /*
+   * Fake zerocross
+   */
+  if (!(timerTicks % 83)) {
+    zeroCrossingIsr();
+  }
 
   timerTicks++;
 
@@ -246,7 +253,7 @@ void setup() {
 
   setupTFT();
 
-  myEEPROM.begin(myEEPROM.twiClock100kHz);
+  myEEPROM.begin(myEEPROM.twiClock400kHz);
 
   if (firstRun()) {
     factoryReset();
@@ -319,8 +326,12 @@ void setup() {
   currentState = Settings;
   menuUpdateRequest = true;
 
+  Timer1.pause();
+  Timer1.setCount(0);
   Timer1.setPeriod(TIMER1_PERIOD_US);
-  Timer1.attachInterrupt(0, timerIsr);
+  Timer1.refresh();
+  Timer1.attachInterrupt(0, &timerIsr);
+  Timer1.resume();
 
   attachInterrupt(INT_ZX, zeroCrossingIsr, RISING);
   delay(100);
@@ -706,7 +717,7 @@ bool firstRun() {
 #ifndef ALWAYS_FIRST_RUN
 
   // if all bytes of a profile in the middle of the eeprom space are 255, we assume it's a first run
-  unsigned int offset = (maxProfiles/2) * sizeof(Profile_t);
+  unsigned int offset = (2) * sizeof(Profile_t);
 
   for (uint16_t i = offset; i < offset + sizeof(Profile_t); i++) {
     if (myEEPROM.read(i) != 255) {

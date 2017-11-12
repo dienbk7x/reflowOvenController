@@ -104,10 +104,12 @@ const Profile_t romProfiles[] {
 };
 
 
+
 Profile_t activeProfile; // the one and only instance
 uint8_t activeProfileId = 0;
 
-const uint8_t maxProfiles = 10; // a profile takes 29bytes, so 512bytes of eeprom holds over 15
+const uint8_t maxProfiles = 10; // a profile takes 36bytes, so 512bytes of eeprom holds over 10
+
 
 void makeDefaultProfile() {
   strcpy (activeProfile.name,  DEFAULT_PROFILE_NAME);
