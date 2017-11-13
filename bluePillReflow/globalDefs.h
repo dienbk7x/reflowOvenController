@@ -3,6 +3,25 @@
 
 #include "config.h"
 
+/*
+ * Ports ON and OFF Levels
+ * These defines allow to change the active level more easily.
+ */
+#define HEATER_OFF  LOW
+#define HEATER_ON   HIGH
+#define FAN_OFF     LOW
+#define FAN_ON      HIGH
+
+/*
+ * Max lenght
+ */
+
+#define NAME_LENGHT 12
+
+/*
+ * Main frequency.
+ * This is important for the seconds calculations, which depend on Zero Cross ticks.
+ */
 
 #if defined(MAINS_50HZ)
   static const uint8_t DEFAULT_LOOP_DELAY = 89;  // should be about 16% less for 60Hz mains
@@ -15,7 +34,7 @@
 static const uint8_t TICKS_PER_UPDATE     = 25; // 
 static const uint8_t TICKS_TO_REDRAW      = 50; // 
 
-const char * ver = "3.2";
+const char * ver = "3.3";
 
 
 
@@ -29,9 +48,10 @@ float Output;
 uint8_t fanValue;
 uint8_t heaterValue;
 float rampRate = 0;
+float targetRate = 0;
 
 // ----------------------------------
-typedef struct {
+typedef struct PID_t {
   float Kp;
   float Ki;
   float Kd;
@@ -51,7 +71,7 @@ int16_t fanAssistSpeed = 33; // default fan speed
 // ----------------------------------------------------------------------------
 // state machine
 
-typedef enum {
+typedef enum State{
   None     = 0,
   Idle     = 1,
   Settings = 2,
@@ -75,8 +95,8 @@ State currentState  = Idle;
 
 
 // data type for the values used in the reflow profile
-typedef struct profileValues_s {
-  char name[16];
+typedef struct profile_t {
+  char name[NAME_LENGHT];
   float  rampUpRate;
   float  rampDownRate;
   int16_t soakTempA;
@@ -85,7 +105,14 @@ typedef struct profileValues_s {
   int16_t peakTemp;
   int16_t peakDuration;
   uint8_t checksum;
-} Profile_t;
+} profile_t;
+
+typedef struct settings_t {
+    profile_t profiles[10];
+    PID_t heaterPID;
+    uint8_t fanValue;
+    uint8_t defaultProfileId;
+} settings_t;
 
 /*
  * This variable holds 4 default profiles in ROM. Can be extended to hold more.
@@ -96,21 +123,22 @@ typedef struct profileValues_s {
  * http://www.we-online.com/web/en/index.php/show/media/07_electronic_components/download_center_1/reach___rohs/Standard_Reflow_Wave_Solderprofil_LF.pdf
  * https://www.renesas.com/en-eu/support/products-common/lead/specific-info/rt/heatproof.html
  */
-const Profile_t romProfiles[] {
-    {"Sn63 Pb37", 1, 4.0, 150, 165, 120, 230, 20, 0},
+const profile_t romProfiles[] {
+    {"Sn63Pb37", 1, 4.0, 150, 165, 120, 230, 20, 0},
     {"SAC305", 1, 4.0, 150, 180, 120, 250, 15, 0},
-    {"Pb Free-Wurth", 3, 6.0, 150, 200, 120, 245, 20, 0},
-    {"Renesas-PbFree", 3, 6.0, 150, 200, 120, 240, 20, 0}
+    {"0Pb-Wurth", 1.4, 6.0, 150, 200, 120, 245, 20, 0},
+    {"Sn42Bi58", 0.8, 6.0, 100, 135, 90, 160, 10, 0},
+    {"Renesas-0Pb", 1.4, 6.0, 150, 200, 120, 240, 20, 0}
 };
 
 
 
-Profile_t activeProfile; // the one and only instance
+profile_t activeProfile; // the one and only instance
 uint8_t activeProfileId = 0;
 
-const uint8_t maxProfiles = 10; // a profile takes 36bytes, so 512bytes of eeprom holds over 10
+const uint8_t maxProfiles = 9; // a profile takes 32bytes, so 512bytes of eeprom holds over 10
 
-
+/*
 void makeDefaultProfile() {
   strcpy (activeProfile.name,  DEFAULT_PROFILE_NAME);
   activeProfile.rampUpRate      = DEFAULT_RAMP_UP_RATE;
@@ -121,7 +149,7 @@ void makeDefaultProfile() {
   activeProfile.peakTemp        = DEFAULT_PEAK_TEPM;
   activeProfile.peakDuration    = DEFAULT_PEAK_DURATION;
 }
-
+*/
 
 
 #endif //GLOBAL_DEFS_H

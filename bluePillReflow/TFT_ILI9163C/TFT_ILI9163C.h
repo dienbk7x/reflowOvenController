@@ -135,6 +135,9 @@ Done!
 #ifndef _TFT_ILI9163CLIB_H_
 #define _TFT_ILI9163CLIB_H_
 
+#ifndef swap
+  #define swap(a, b) { int16_t t = a; a = b; b = t; }
+#endif
 
 #include "Arduino.h"
 #include "Print.h"
@@ -312,7 +315,7 @@ class TFT_ILI9163C : public Adafruit_GFX {
 	void     	begin(void),
 	            begin(SPIClass* spi),
 				setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1),//graphic Addressing
-				setCursor(int16_t x,int16_t y),//char addressing
+				//setCursor(int16_t x,int16_t y),//char addressing
 				pushColor(uint16_t color),
 				fillScreen(uint16_t color=0x0000),
 				clearScreen(uint16_t color=0x0000),//same as fillScreen

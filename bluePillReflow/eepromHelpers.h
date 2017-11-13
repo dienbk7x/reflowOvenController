@@ -13,9 +13,9 @@ extEEPROM myEEPROM(kbits_4, 1, 16, 0x50);
 
 
 // EEPROM offsets
-const uint16_t offsetFanSpeed   = maxProfiles * sizeof(Profile_t) + 1; // one byte
-const uint16_t offsetProfileNum = maxProfiles * sizeof(Profile_t) + 2; // one byte
-const uint16_t offsetPidConfig  = maxProfiles * sizeof(Profile_t) + 3; // sizeof(PID_t)
+const uint16_t offsetFanSpeed   = maxProfiles * sizeof(profile_t) + 1; // one byte
+const uint16_t offsetProfileNum = maxProfiles * sizeof(profile_t) + 2; // one byte
+const uint16_t offsetPidConfig  = maxProfiles * sizeof(profile_t) + 3; // sizeof(PID_t)
 
 
 bool savePID() {
@@ -44,15 +44,20 @@ void saveLastUsedProfile() {
   myEEPROM.write(offsetProfileNum, (uint8_t)activeProfileId );
 }
 
+void loadProfileName(uint8 profile, char *name) {
+    uint16_t offset = profile * sizeof(profile_t);
+    eeprom_read_block(name, offset, NAME_LENGHT);
+}
+
 
 bool loadParameters(uint8_t profile) {
-  uint16_t offset = profile * sizeof(Profile_t);
+  uint16_t offset = profile * sizeof(profile_t);
 
   do {} while (!(eeprom_is_ready()));
-  eeprom_read_block(&activeProfile, offset, sizeof(Profile_t));
+  eeprom_read_block(&activeProfile, offset, sizeof(profile_t));
 
 #ifdef WITH_CHECKSUM
-  return activeProfile.checksum == crc8((uint8_t *)&activeProfile, sizeof(Profile_t) - sizeof(uint8_t));
+  return activeProfile.checksum == crc8((uint8_t *)&activeProfile, sizeof(profile_t) - sizeof(uint8_t));
 #else
   return true;  
 #endif
@@ -66,14 +71,14 @@ void loadLastUsedProfile() {
 
 bool saveParameters(uint8_t profile) {
 #ifndef PIDTUNE
-  uint16_t offset = profile * sizeof(Profile_t);
+  uint16_t offset = profile * sizeof(profile_t);
 
 #ifdef WITH_CHECKSUM
-  activeProfile.checksum = crc8((uint8_t *)&activeProfile, sizeof(Profile_t) - sizeof(uint8_t));
+  activeProfile.checksum = crc8((uint8_t *)&activeProfile, sizeof(profile_t) - sizeof(uint8_t));
 #endif
 
   do {} while (!(eeprom_is_ready()));
-  eeprom_write_block(&activeProfile, offset, sizeof(Profile_t));
+  eeprom_write_block(&activeProfile, offset, sizeof(profile_t));
 #endif
   return true;
 }

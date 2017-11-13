@@ -245,7 +245,7 @@ void TFT_ILI9163C::begin(void) {
 		_SPI->setDataSize (SPI_CR1_DFF);
 	#endif
 	#if !defined (SPI_HAS_TRANSACTION)
-    _SPI->setClockDivider(SPI_CLOCK_DIV8); // 8 MHz
+    _SPI->setClockDivider(SPI_CLOCK_DIV2); // 8 MHz
     _SPI->setBitOrder(MSBFIRST);
     _SPI->setDataMode(SPI_MODE0);
 	#endif
@@ -700,13 +700,14 @@ void TFT_ILI9163C::homeAddress() {
 
 
 
+/*
 void TFT_ILI9163C::setCursor(int16_t x, int16_t y) {
 	if (boundaryCheck(x,y)) return;
 	setAddrWindow(0x00,0x00,x,y);
 	cursor_x = x;
 	cursor_y = y;
 }
-
+*/
 
 
 void TFT_ILI9163C::drawPixel(int16_t x, int16_t y, uint16_t color) {

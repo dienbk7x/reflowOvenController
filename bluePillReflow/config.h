@@ -43,8 +43,8 @@ static const uint8_t LCD_ROTATION = 3; // 0/2-> portrait, 1/3-> landscape
 static const uint8_t PIN_TC_CS   = PA4;
 static const uint8_t PIN_TC_DO   = PA7;
 static const uint8_t PIN_TC_CLK  = PA5;
-static const uint8_t PIN_HEATER = PA0; //
-static const uint8_t PIN_FAN    = PA8; //
+static const uint8_t PIN_HEATER = PA8; //
+static const uint8_t PIN_FAN    = PA9; //
 static const uint8_t PIN_BEEPER = PB9; // Beeper Out
 // --- encoder
 static const uint8_t PIN_ENC_A           = PA2; //
@@ -55,7 +55,7 @@ static const boolean IS_ENC_ACTIVE       = false; // encoder module actively fed
 
 static const uint16_t BEEP_FREQ = 1976; // B6 note
 
-static const uint8_t PIN_ZX = PA9; // pin for zero crossing detector
+static const uint8_t PIN_ZX = PA10; // pin for zero crossing detector
 static const uint8_t INT_ZX = PIN_ZX; // interrupt for zero crossing detector
 
 static const uint8_t NUM_TEMP_READINGS  = 5;
@@ -95,9 +95,9 @@ Experimental method to tune PID:
 
 */
 #define PID_SAMPLE_TIME 200
-#define FACTORY_KP  1.75 // 1.75 //4.0 
-#define FACTORY_KI 0.03 // 0.03 // 0.05 
-#define FACTORY_KD 3.0 //3.0//2.0 
+#define FACTORY_KP 4.0 // 1.75 //4.0
+#define FACTORY_KI 0.05 // 0.03 // 0.05
+#define FACTORY_KD 2.0 //3.0//2.0
 
 
 
