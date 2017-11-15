@@ -78,8 +78,8 @@ typedef enum State{
   Edit     = 3,
 
   UIMenuEnd = 9,
-
-  RampToSoak = 10,
+  Preheat = 10,
+  RampToSoak,
   Soak,
   RampUp,
   Peak,

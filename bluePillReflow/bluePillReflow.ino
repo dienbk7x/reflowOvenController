@@ -529,14 +529,32 @@ void loop(void)
 
         switch (currentState) {
 #ifndef PIDTUNE
+        case Preheat:
+            if (stateChanged) {
+                stateChanged = false;
+                Output = 100;
+                Setpoint = idleTemp;
+                PID_1.SetMode(AUTOMATIC);
+                PID_1.SetControllerDirection(DIRECT);
+                PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd);
+                tone(PIN_BEEPER,BEEP_FREQ,100);
+            }
+            if (averageT1 >= idleTemp -5){
+                currentState = RampToSoak;
+            }
+            break;
+
         case RampToSoak:
             if (stateChanged) {
+                startCycleZeroCrossTicks = zeroCrossTicks;
                 lastCycleTicks = zeroCrossTicks;
                 stateChanged = false;
+                /*
                 Output = 100; //Start at full power to heat up
                 PID_1.SetMode(AUTOMATIC);
                 PID_1.SetControllerDirection(DIRECT);
                 PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd);
+                */
                 Setpoint = Input + 1;
 #ifdef WITH_BEEPER
                 tone(PIN_BEEPER,BEEP_FREQ,100);
@@ -593,7 +611,7 @@ void loop(void)
              */
             if (averageT1 >= activeSegment->targetTemp - 5) {
             //if (Setpoint >= activeProfile.peakTemp - 1) {
-                Setpoint = activeSegment->targetTemp;
+                //Setpoint = activeSegment->targetTemp;
                 currentState = Peak;
             }
             break;
@@ -604,6 +622,10 @@ void loop(void)
                 lastCycleTicks = zeroCrossTicks;
                 activeSegment = &activeProfile.peak;
                 targetRate = ((activeSegment->targetTemp - averageT1) / activeSegment->timeLength);
+            }
+
+            if (Setpoint < activeSegment->targetTemp){
+                updateSetpoint();
             }
 
             if (zeroCrossTicks - stateChangedTicks >= (uint32_t)activeSegment->timeLength * TICKS_PER_SEC) {
@@ -619,13 +641,18 @@ void loop(void)
                 PID_1.SetControllerDirection(REVERSE);
                 PID_1.SetTunings(fanPID.Kp, fanPID.Ki, fanPID.Kd);
                 activeSegment = &activeProfile.rampDown;
-                Setpoint = activeSegment->targetTemp; // get it all going with a bit of a kick! v sluggish here otherwise, too hot too long
+                Setpoint = averageT1 - 5 ; // get it all going with a bit of a kick! v sluggish here otherwise, too hot too long
+                targetRate = ((averageT1 - activeSegment->targetTemp ) / activeSegment->timeLength);
 #ifdef WITH_BEEPER
                 tone(PIN_BEEPER,BEEP_FREQ,3000);  // Beep as a reminder that CoolDown starts (and maybe open up the oven door for fast enough cooldown)
 #endif
 #ifdef WITH_SERVO       
                 // TODO: implement servo operated lid
 #endif   
+            }
+
+            if (Setpoint > activeSegment->targetTemp){
+                updateSetpoint(true);
             }
 
             if (zeroCrossTicks - stateChangedTicks >= (uint32_t)activeSegment->timeLength * TICKS_PER_SEC) {
@@ -636,15 +663,17 @@ void loop(void)
         case CoolDown:
             if (stateChanged) {
                 stateChanged = false;
+                /*
                 PID_1.SetControllerDirection(REVERSE);
                 PID_1.SetTunings(fanPID.Kp, fanPID.Ki, fanPID.Kd);
+                */
                 activeSegment = &activeProfile.coolDown;
-                targetRate = ((activeSegment->targetTemp - averageT1) / activeSegment->timeLength);
+                targetRate = ((averageT1 - activeSegment->targetTemp ) / activeSegment->timeLength);
             }
 
             if (Setpoint > idleTemp){
                 //updateSetpoint(true);
-                updateSetpoint();
+                updateSetpoint(true);
             }
 
             if (Input < (idleTemp + 5)) {

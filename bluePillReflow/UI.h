@@ -603,7 +603,8 @@ bool menu_cycleStart(const Menu::Action_t action) {
     menuExit(action);
 
 #ifndef PIDTUNE    
-    currentState = RampToSoak;
+    //currentState = RampToSoak;
+    currentState = Preheat;
 #else
     toggleAutoTune();
 #endif
@@ -674,7 +675,7 @@ MenuItem(miEditProfile, "Edit Profile", miLoadProfile, miCycleStart,   miExit, m
   MenuItem(miRampUpTemp,   "Ramp up temp", miPeakTime,    miRampUpTime,     miEditProfile, Menu::NullItem, menu_editNumericalValue);
   MenuItem(miPeakTime,   "Peak time", miPeakTemp,      miRampUpTemp,     miEditProfile, Menu::NullItem, menu_editNumericalValue);
   MenuItem(miPeakTemp,   "Peak temp", miRampDownTime,    miPeakTime,     miEditProfile, Menu::NullItem, menu_editNumericalValue);
-  MenuItem(miRampDownTime,   "Ramp dn time", miRampDownTemp,      miSoakTemp,     miEditProfile, Menu::NullItem, menu_editNumericalValue);
+  MenuItem(miRampDownTime,   "Ramp dn time", miRampDownTemp,      miPeakTemp,     miEditProfile, Menu::NullItem, menu_editNumericalValue);
   MenuItem(miRampDownTemp,   "Ramp dn temp", miCoolDownTime,    miRampDownTime,     miEditProfile, Menu::NullItem, menu_editNumericalValue);
   MenuItem(miCoolDownTime,   "Cool dn time", miCoolDownTemp,      miRampDownTemp,     miEditProfile, Menu::NullItem, menu_editNumericalValue);
   MenuItem(miCoolDownTemp,   "Cool dn temp", Menu::NullItem,    miCoolDownTime,     miEditProfile, Menu::NullItem, menu_editNumericalValue);
@@ -765,7 +766,7 @@ void updateProcessDisplay() {
 
   // elapsed time
   uint16_t elapsed = (zeroCrossTicks - startCycleZeroCrossTicks) / (float)(TICKS_PER_SEC);
-  tft.setCursor(tft.width()-35, y);
+  tft.setCursor(tft.width()-25, y);
   alignRightPrefix(elapsed);
   tft.print(elapsed);
   tft.print("s");
@@ -785,6 +786,7 @@ void updateProcessDisplay() {
 
   switch (currentState) {
     #define casePrintState(state) case state: tft.print(#state); break;
+    casePrintState(Preheat);
     casePrintState(RampToSoak);
     casePrintState(Soak);
     casePrintState(RampUp);
@@ -807,28 +809,29 @@ void updateProcessDisplay() {
   printFloat(Setpoint);
   tft.print("\367C  ");
 
-  // draw temperature curves
+  if(currentState != Preheat) {
+      // draw temperature curves
 
-  if (xOffset >= elapsed) {
-    xOffset = 0;
+      if (xOffset >= elapsed) {
+          xOffset = 0;
+      }
+
+      do { // x with wrap around
+
+          dx = (uint16_t)((elapsed - xOffset) * pxPerSec);
+          if (dx > w) {
+              xOffset = elapsed;
+          }
+      } while(dx > w);
+
+      // temperature setpoint
+      dy = h - ((uint16_t)Setpoint * pxPerC / 100) + yOffset;
+      tft.drawPixel(dx, dy, BLUE);
+
+      // actual temperature
+      dy = h - ((uint16_t)temperature * pxPerC / 100) + yOffset;
+      tft.drawPixel(dx, dy, RED);
   }
-
-  do { // x with wrap around
-
-    dx = (uint16_t)((elapsed - xOffset) * pxPerSec);
-    if (dx > w) {
-      xOffset = elapsed;
-    }
-  } while(dx > w);
-
-  // temperature setpoint
-  dy = h - ((uint16_t)Setpoint * pxPerC / 100) + yOffset;
-  tft.drawPixel(dx, dy, BLUE);
-
-  // actual temperature
-  dy = h - ((uint16_t)temperature * pxPerC / 100) + yOffset;
-  tft.drawPixel(dx, dy, RED);
-
   // bottom line
   y = 119;
 
