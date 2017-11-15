@@ -73,7 +73,7 @@ static const uint16_t DEFAULT_PEAK_TEPM         = 245;
 static const uint16_t DEFAULT_PEAK_DURATION     = 15;
 static const float DEFAULT_RAMP_UP_RATE         = 2.0; // degrees / second (keep it about 1/2 of maximum to prevent PID overshooting)
 static const float DEFAULT_RAMP_DOWN_RATE       = 4.0; // degrees / second
-static const uint8_t FACTORY_FAN_ASSIST_SPEED   = 33;
+static const uint8_t FACTORY_FAN_ASSIST_SPEED   = 100;
 
 
 /*
@@ -95,9 +95,9 @@ Experimental method to tune PID:
 
 */
 #define PID_SAMPLE_TIME 200
-#define FACTORY_KP 4.0 // 1.75 //4.0
-#define FACTORY_KI 0.05 // 0.03 // 0.05
-#define FACTORY_KD 2.0 //3.0//2.0
+#define FACTORY_KP 1.75// 1.75 //4.0
+#define FACTORY_KI 0.03 // 0.03 // 0.05
+#define FACTORY_KD 3.0 //3.0//2.0
 
 
 

@@ -46,7 +46,7 @@ void saveLastUsedProfile() {
 
 void loadProfileName(uint8 profile, char *name) {
     uint16_t offset = profile * sizeof(profile_t);
-    eeprom_read_block(name, offset, NAME_LENGHT);
+    eeprom_read_block(name, offset, NAME_LENGTH);
 }
 
 
@@ -57,7 +57,7 @@ bool loadParameters(uint8_t profile) {
   eeprom_read_block(&activeProfile, offset, sizeof(profile_t));
 
 #ifdef WITH_CHECKSUM
-  return activeProfile.checksum == crc8((uint8_t *)&activeProfile, sizeof(profile_t) - sizeof(uint8_t));
+  return activeProfile.checksum == crc8((uint8_t *)&activeProfile, sizeof(profile_t) - sizeof(uint16_t));
 #else
   return true;  
 #endif
@@ -74,7 +74,7 @@ bool saveParameters(uint8_t profile) {
   uint16_t offset = profile * sizeof(profile_t);
 
 #ifdef WITH_CHECKSUM
-  activeProfile.checksum = crc8((uint8_t *)&activeProfile, sizeof(profile_t) - sizeof(uint8_t));
+  activeProfile.checksum = crc8((uint8_t *)&activeProfile, sizeof(profile_t) - sizeof(uint16_t));
 #endif
 
   do {} while (!(eeprom_is_ready()));

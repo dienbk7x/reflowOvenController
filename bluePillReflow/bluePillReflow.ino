@@ -447,7 +447,7 @@ void loop(void)
         if (currentState < UIMenuEnd && !encMovement && currentState != Edit && previousState != Edit) { // clear menu on child/parent navigation
             tft.fillScreen(WHITE);
         }
-        MenuEngine.render(renderMenuItem, menuItemsVisible);
+        MenuEngine.render(renderMenuItem, menuItemsVisible-1);
     }
 
     // --------------------------------------------------------------------------
@@ -533,20 +533,24 @@ void loop(void)
             if (stateChanged) {
                 lastCycleTicks = zeroCrossTicks;
                 stateChanged = false;
-                Output = 50;
+                Output = 100; //Start at full power to heat up
                 PID_1.SetMode(AUTOMATIC);
                 PID_1.SetControllerDirection(DIRECT);
                 PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd);
-                Setpoint = Input;
+                Setpoint = Input + 1;
 #ifdef WITH_BEEPER
                 tone(PIN_BEEPER,BEEP_FREQ,100);
 #endif
-                targetRate = activeProfile.rampUpRate;
+                activeSegment = &activeProfile.rampToSoak;
+                targetRate = ((activeSegment->targetTemp - averageT1) / activeSegment->timeLength);
             }
 
-            updateSetpoint();
+            if (Setpoint < activeSegment->targetTemp){
+                updateSetpoint();
+            }
 
-            if (Setpoint >= activeProfile.soakTempA - 1) {
+            if (averageT1 >= activeSegment->targetTemp - 1) {
+                Setpoint = activeSegment->targetTemp;
                 currentState = Soak;
             }
             break;
@@ -555,11 +559,11 @@ void loop(void)
             if (stateChanged) {
                 lastCycleTicks = zeroCrossTicks;
                 stateChanged = false;
-                Setpoint = activeProfile.soakTempA;
-                targetRate = (activeProfile.soakTempB-activeProfile.soakTempA)/(float)activeProfile.soakDuration;
+                activeSegment = &activeProfile.soak;
+                targetRate = ((activeSegment->targetTemp - averageT1) / activeSegment->timeLength);
             }
 
-            while (Setpoint < activeProfile.soakTempB){
+            if (Setpoint < activeSegment->targetTemp){
                 updateSetpoint();
             }
 
@@ -567,7 +571,7 @@ void loop(void)
              * If we have been at least the minimum time in soak mode and have reached soakTemB
              * move to the next stage
              */
-            if ((averageT1 >= activeProfile.soakTempB) && (zeroCrossTicks - stateChangedTicks >= (uint32_t)activeProfile.soakDuration * TICKS_PER_SEC)) {
+            if ((averageT1 >= activeSegment->targetTemp) && (zeroCrossTicks - stateChangedTicks >= (uint32_t)activeSegment->timeLength * TICKS_PER_SEC)) {
                 currentState = RampUp;
             }
             break;
@@ -576,20 +580,20 @@ void loop(void)
             if (stateChanged) {
                 stateChanged = false;
                 lastCycleTicks = zeroCrossTicks;
-                targetRate = min(2 * activeProfile.rampUpRate, 3); // changed to increase speed in rampup to peak
-                //targetRate = activeProfile.rampUpRate;
+                activeSegment = &activeProfile.rampUp;
+                targetRate = ((activeSegment->targetTemp - averageT1) / activeSegment->timeLength);
             }
 
-            while (Setpoint < activeProfile.peakTemp){
+            if (Setpoint < activeSegment->targetTemp){
                 updateSetpoint();
             }
 
             /*
              * Switch to Peak stage when current temperature is within 5 degrees.
              */
-            if (averageT1 >= activeProfile.peakTemp - 5) {
+            if (averageT1 >= activeSegment->targetTemp - 5) {
             //if (Setpoint >= activeProfile.peakTemp - 1) {
-                Setpoint = activeProfile.peakTemp;
+                Setpoint = activeSegment->targetTemp;
                 currentState = Peak;
             }
             break;
@@ -597,11 +601,14 @@ void loop(void)
         case Peak:
             if (stateChanged) {
                 stateChanged = false;
-                Setpoint = activeProfile.peakTemp;
+                lastCycleTicks = zeroCrossTicks;
+                activeSegment = &activeProfile.peak;
+                targetRate = ((activeSegment->targetTemp - averageT1) / activeSegment->timeLength);
             }
 
-            if (zeroCrossTicks - stateChangedTicks >= (uint32_t)activeProfile.peakDuration * TICKS_PER_SEC) {
+            if (zeroCrossTicks - stateChangedTicks >= (uint32_t)activeSegment->timeLength * TICKS_PER_SEC) {
                 currentState = RampDown;
+                Setpoint = activeProfile.rampDown.targetTemp;
             }
             break;
 
@@ -611,8 +618,8 @@ void loop(void)
                 lastCycleTicks = zeroCrossTicks;
                 PID_1.SetControllerDirection(REVERSE);
                 PID_1.SetTunings(fanPID.Kp, fanPID.Ki, fanPID.Kd);
-                targetRate = activeProfile.rampDownRate;
-                Setpoint = activeProfile.peakTemp - 15; // get it all going with a bit of a kick! v sluggish here otherwise, too hot too long
+                activeSegment = &activeProfile.rampDown;
+                Setpoint = activeSegment->targetTemp; // get it all going with a bit of a kick! v sluggish here otherwise, too hot too long
 #ifdef WITH_BEEPER
                 tone(PIN_BEEPER,BEEP_FREQ,3000);  // Beep as a reminder that CoolDown starts (and maybe open up the oven door for fast enough cooldown)
 #endif
@@ -621,9 +628,7 @@ void loop(void)
 #endif   
             }
 
-            updateSetpoint(true);
-
-            if (Setpoint <= idleTemp) {
+            if (zeroCrossTicks - stateChangedTicks >= (uint32_t)activeSegment->timeLength * TICKS_PER_SEC) {
                 currentState = CoolDown;
             }
             break;
@@ -633,8 +638,13 @@ void loop(void)
                 stateChanged = false;
                 PID_1.SetControllerDirection(REVERSE);
                 PID_1.SetTunings(fanPID.Kp, fanPID.Ki, fanPID.Kd);
-                Setpoint = idleTemp;
+                activeSegment = &activeProfile.coolDown;
+                targetRate = ((activeSegment->targetTemp - averageT1) / activeSegment->timeLength);
+            }
 
+            if (Setpoint > idleTemp){
+                //updateSetpoint(true);
+                updateSetpoint();
             }
 
             if (Input < (idleTemp + 5)) {

@@ -16,7 +16,7 @@
  * Max lenght
  */
 
-#define NAME_LENGHT 12
+#define NAME_LENGTH 12
 
 /*
  * Main frequency.
@@ -66,7 +66,7 @@ uint32_t startCycleZeroCrossTicks;
 volatile uint32_t zeroCrossTicks = 0;
 char buf[20]; // generic char buffer
 
-int16_t fanAssistSpeed = 33; // default fan speed
+int16_t fanAssistSpeed = FACTORY_FAN_ASSIST_SPEED; // default fan speed
 
 // ----------------------------------------------------------------------------
 // state machine
@@ -93,7 +93,27 @@ typedef enum State{
 
 State currentState  = Idle;
 
+/*
+ * Data pairs holding target temperature and time from last segment
+ */
 
+typedef struct segment_t {
+    int16_t timeLength;
+    int16_t targetTemp;
+} segment_t;
+
+typedef struct profile_t {
+    char name[NAME_LENGTH];
+    segment_t rampToSoak;
+    segment_t soak;
+    segment_t rampUp;
+    segment_t peak;
+    segment_t rampDown;
+    segment_t coolDown;
+    uint16_t  checksum;
+} profile_t;
+
+/*
 // data type for the values used in the reflow profile
 typedef struct profile_t {
   char name[NAME_LENGHT];
@@ -106,9 +126,12 @@ typedef struct profile_t {
   int16_t peakDuration;
   uint8_t checksum;
 } profile_t;
+*/
+
+const uint8_t maxProfiles = 10; // a profile takes 32bytes, so 512bytes of eeprom holds over 10
 
 typedef struct settings_t {
-    profile_t profiles[10];
+    profile_t profiles[maxProfiles];
     PID_t heaterPID;
     uint8_t fanValue;
     uint8_t defaultProfileId;
@@ -122,21 +145,24 @@ typedef struct settings_t {
  *
  * http://www.we-online.com/web/en/index.php/show/media/07_electronic_components/download_center_1/reach___rohs/Standard_Reflow_Wave_Solderprofil_LF.pdf
  * https://www.renesas.com/en-eu/support/products-common/lead/specific-info/rt/heatproof.html
+ * Kester https://muse.union.edu/nguyenh/2014/07/02/day-12/
  */
+//name; rampToSoak; soak; rampUp; peak; rampDown; coolDown;
 const profile_t romProfiles[] {
-    {"Sn63Pb37", 1, 4.0, 150, 165, 120, 230, 20, 0},
-    {"SAC305", 1, 4.0, 150, 180, 120, 250, 15, 0},
-    {"0Pb-Wurth", 1.4, 6.0, 150, 200, 120, 245, 20, 0},
-    {"Sn42Bi58", 0.8, 6.0, 100, 135, 90, 160, 10, 0},
-    {"Renesas-0Pb", 1.4, 6.0, 150, 200, 120, 240, 20, 0}
+    {"Sn63Pb37", 90, 150, 120, 165, 20, 230, 20, 230, 20, 170, 60, 50},
+    {"Sn63Pb37-K", 90, 150, 90, 180, 25, 215, 20, 215, 30, 185, 60, 50},
+    {"SAC305", 90, 150, 90, 200, 25, 240, 20, 240, 30, 200, 60, 50},
+    {"0Pb-Wurth", 90, 150, 120, 200, 20, 245, 20, 245, 20, 180, 60, 50},
+    {"Sn42Bi58", 90, 120, 90, 145, 20, 170, 20, 170, 20, 145, 60, 50},
+//    {"Sn42Bi58", 0.8, 6.0, 100, 135, 90, 160, 10, 0},
+    {"0Pb-Renesas", 90, 150, 120, 200, 20, 255, 20, 255, 20, 180, 60, 50}
 };
 
 
 
 profile_t activeProfile; // the one and only instance
+segment_t* activeSegment;
 uint8_t activeProfileId = 0;
-
-const uint8_t maxProfiles = 9; // a profile takes 32bytes, so 512bytes of eeprom holds over 10
 
 /*
 void makeDefaultProfile() {

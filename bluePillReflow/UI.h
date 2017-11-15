@@ -37,7 +37,7 @@ TFT_ILI9163C tft = TFT_ILI9163C(PIN_LCD_CS, PIN_LCD_DC, PIN_LCD_RST);    // PDQ:
 Menu::Engine MenuEngine;
 
 const uint8_t menuItemHeight = 12;
-const uint8_t menuItemsVisible = 10;
+const uint8_t menuItemsVisible = 7;
 bool menuUpdateRequest = true;
 bool initialProcessDisplay = false;
 
@@ -195,8 +195,9 @@ void clearLastMenuItemRenderState() {
 
 // ----------------------------------------------------------------------------
 
-extern const Menu::Item_t miRampUpRate, miRampDnRate, miSoakTime, 
-                          miSoakTempA, miSoakTempB, miPeakTime, miPeakTemp,
+extern const Menu::Item_t miRampToSoakTime, miRampToSoakTemp, miSoakTime, miSoakTemp,
+                          miRampUpTime, miRampUpTemp, miPeakTime, miPeakTemp,
+                          miRampDownTime, miRampDownTemp, miCoolDownTime, miCoolDownTemp,
                           miLoadProfile, miSaveProfile,
                           miPidSettingP, miPidSettingI, miPidSettingD,
                           miFanSettings, miFactoryReset;
@@ -228,17 +229,22 @@ void printFloat(float val, uint8_t precision = 1) {
 // ----------------------------------------------------------------------------
 
 void getItemValuePointer(const Menu::Item_t *mi, float **d, int16_t **i) {
-  if (mi == &miRampUpRate)  *d = &activeProfile.rampUpRate;
-  if (mi == &miRampDnRate)  *d = &activeProfile.rampDownRate;
-  if (mi == &miSoakTime)    *i = &activeProfile.soakDuration;
-  if (mi == &miSoakTempA)    *i = &activeProfile.soakTempA;
-  if (mi == &miSoakTempB)    *i = &activeProfile.soakTempB;
-  if (mi == &miPeakTime)    *i = &activeProfile.peakDuration;
-  if (mi == &miPeakTemp)    *i = &activeProfile.peakTemp;
-  if (mi == &miPidSettingP) *d = &heaterPID.Kp;
-  if (mi == &miPidSettingI) *d = &heaterPID.Ki;
-  if (mi == &miPidSettingD) *d = &heaterPID.Kd;
-  if (mi == &miFanSettings) *i = &fanAssistSpeed;
+  if (mi == &miRampToSoakTime)  *i = &activeProfile.rampToSoak.timeLength;
+  if (mi == &miRampToSoakTemp)  *i = &activeProfile.rampToSoak.targetTemp;
+  if (mi == &miSoakTime)        *i = &activeProfile.soak.timeLength;
+  if (mi == &miSoakTemp)        *i = &activeProfile.soak.targetTemp;
+  if (mi == &miRampUpTime)      *i = &activeProfile.rampUp.timeLength;
+  if (mi == &miRampUpTemp)      *i = &activeProfile.rampUp.targetTemp;
+  if (mi == &miPeakTime)        *i = &activeProfile.peak.timeLength;
+  if (mi == &miPeakTemp)        *i = &activeProfile.peak.targetTemp;
+  if (mi == &miRampDownTime)    *i = &activeProfile.rampDown.timeLength;
+  if (mi == &miRampDownTemp)    *i = &activeProfile.rampDown.targetTemp;
+  if (mi == &miCoolDownTime)    *i = &activeProfile.coolDown.timeLength;
+  if (mi == &miCoolDownTemp)    *i = &activeProfile.coolDown.targetTemp;
+  if (mi == &miPidSettingP)     *d = &heaterPID.Kp;
+  if (mi == &miPidSettingI)     *d = &heaterPID.Ki;
+  if (mi == &miPidSettingD)     *d = &heaterPID.Kd;
+  if (mi == &miFanSettings)     *i = &fanAssistSpeed;
 }
 
 // ----------------------------------------------------------------------------
@@ -247,8 +253,17 @@ bool isPidSetting(const Menu::Item_t *mi) {
   return mi == &miPidSettingP || mi == &miPidSettingI || mi == &miPidSettingD;
 }
 
+/*
 bool isRampSetting(const Menu::Item_t *mi) {
   return mi == &miRampUpRate || mi == &miRampDnRate;
+}
+*/
+bool isTimeSetting (const Menu::Item_t *mi) {
+    return (mi == &miRampToSoakTime || mi == &miSoakTime  || mi == &miRampUpTime  || mi == &miPeakTime  || mi == &miRampDownTime  || mi == &miCoolDownTime);
+}
+
+bool isTempSetting (const Menu::Item_t *mi) {
+    return (mi == &miRampToSoakTemp || mi == &miSoakTemp || mi == &miRampUpTemp || mi == &miPeakTemp || mi == &miRampDownTemp || mi == &miCoolDownTemp);
 }
 
 // ----------------------------------------------------------------------------
@@ -260,22 +275,15 @@ bool getItemValueLabel(const Menu::Item_t *mi, char *label) {
 
   getItemValuePointer(mi, &dValue, &iValue);
 
-  if (isRampSetting(mi) || isPidSetting(mi)) {
+  if (isPidSetting(mi)) {
     p = label;
     ftoa(p, *dValue, (isPidSetting(mi)) ? 2 : 1); // need greater precision with pid values
-    p = label;
-
-    if (isRampSetting(mi)) {
-      while(*p != '\0') p++;
-      *p++ = 0xf7; *p++ = 'C'; *p++ = '/'; *p++ = 's';
-      *p = '\0';
-    }
   }
   else {
-    if (mi == &miPeakTemp || mi == &miSoakTempA || mi == &miSoakTempB ) {
+    if (isTempSetting (mi)) {
       itostr(label, *iValue, "\367C");
     }
-    if (mi == &miPeakTime || mi == &miSoakTime) {
+    if (isTimeSetting (mi)) {
       itostr(label, *iValue, "s");
     }
     if (mi == &miFanSettings) {
@@ -311,10 +319,10 @@ bool menu_editNumericalValue(const Menu::Action_t action) {
          * a space after the value,need to test.
          */
         if (initial) {
-          tft.fillRect(69+MENU_TEXT_XPOS, y - 1, tft.width()-69-MENU_TEXT_XPOS-2, menuItemHeight - 2, RED);
+          tft.fillRect(79+MENU_TEXT_XPOS, y - 1, tft.width()-79-MENU_TEXT_XPOS-2, menuItemHeight - 2, RED);
         }
 
-        tft.setCursor(70+MENU_TEXT_XPOS, y);
+        tft.setCursor(80+MENU_TEXT_XPOS, y);
         break;
       }
     }
@@ -325,30 +333,24 @@ bool menu_editNumericalValue(const Menu::Action_t action) {
     float  *dValue = NULL;
     getItemValuePointer(MenuEngine.currentItem, &dValue, &iValue);
 
-    if (isRampSetting(MenuEngine.currentItem) || isPidSetting(MenuEngine.currentItem)) {
+    if (isPidSetting(MenuEngine.currentItem)) {
       float tmp;
-      float factor = (isPidSetting(MenuEngine.currentItem)) ? 100 : 10;
+      float factor = 100;
 
       if (initial) {
         tmp = *dValue;
         tmp *= factor;
         encAbsolute = (int16_t)tmp;
-        encLastAbsolute = encAbsolute - 1;
+        encLastAbsolute = encAbsolute + 1;
       }
       else {
+        encAbsolute = max(encAbsolute, 0);
         tmp = encAbsolute;
         tmp /= factor;
         *dValue = tmp;
       }
-      /*
-       * Clamp Temp values to positive numbers
-       */
-      if (isRampSetting(MenuEngine.currentItem)){
-          *dValue = max(*dValue, +0.0);
-          encAbsolute = max(encAbsolute, 0);
-      }
     }
-    else {
+    else { // integers, clamp fan 0-100 and temp and time 0-300
       if (initial) {
           encAbsolute = *iValue;
           encLastAbsolute = encAbsolute +1;
@@ -358,14 +360,14 @@ bool menu_editNumericalValue(const Menu::Action_t action) {
               encAbsolute = constrain(encAbsolute,0,100);
           }
           else {
-              encAbsolute = constrain(encAbsolute,0,280);
+              encAbsolute = constrain(encAbsolute,0,300);
           }
           *iValue = encAbsolute;
       }
     }
     if (encAbsolute != encLastAbsolute) {
       getItemValueLabel(MenuEngine.currentItem, buf);
-      tft.fillRect(69+MENU_TEXT_XPOS, y - 1, tft.width()-69-MENU_TEXT_XPOS-2, menuItemHeight - 2, RED);
+      tft.fillRect(79+MENU_TEXT_XPOS, y - 1, tft.width()-79-MENU_TEXT_XPOS-2, menuItemHeight - 2, RED);
       tft.print(buf);
       tft.setTextColor(BLACK, WHITE);
       encLastAbsolute = encAbsolute;
@@ -412,13 +414,19 @@ void factoryReset() {
   // then save factory profiles settings to corresponding slots
   for (uint8_t i = 0; i < (sizeof( romProfiles ) / sizeof( romProfiles[0])); i++) {
       strcpy (activeProfile.name,  romProfiles[i].name);
-      activeProfile.rampUpRate      = romProfiles[i].rampUpRate;
-      activeProfile.rampDownRate    = romProfiles[i].rampDownRate;
-      activeProfile.soakTempA       = romProfiles[i].soakTempA;
-      activeProfile.soakTempB       = romProfiles[i].soakTempB;
-      activeProfile.soakDuration    = romProfiles[i].soakDuration;
-      activeProfile.peakTemp        = romProfiles[i].peakTemp;
-      activeProfile.peakDuration    = romProfiles[i].peakDuration;
+      activeProfile.rampToSoak.targetTemp   = romProfiles[i].rampToSoak.targetTemp;
+      activeProfile.rampToSoak.timeLength   = romProfiles[i].rampToSoak.timeLength;
+      activeProfile.soak.targetTemp         = romProfiles[i].soak.targetTemp;
+      activeProfile.soak.timeLength         = romProfiles[i].soak.timeLength;
+      activeProfile.rampUp.targetTemp       = romProfiles[i].rampUp.targetTemp;
+      activeProfile.rampUp.timeLength       = romProfiles[i].rampUp.timeLength;
+      activeProfile.peak.targetTemp         = romProfiles[i].peak.targetTemp;
+      activeProfile.peak.timeLength         = romProfiles[i].peak.timeLength;
+      activeProfile.rampDown.targetTemp     = romProfiles[i].rampDown.targetTemp;
+      activeProfile.rampDown.timeLength     = romProfiles[i].rampDown.timeLength;
+      activeProfile.coolDown.targetTemp     = romProfiles[i].coolDown.targetTemp;
+      activeProfile.coolDown.timeLength     = romProfiles[i].coolDown.timeLength;
+      activeProfile.checksum                = romProfiles[i].checksum;
     saveParameters(i);
   }
 
@@ -560,7 +568,7 @@ bool menu_saveLoadProfile(const Menu::Action_t action) {
         tft.print(encAbsolute);
 
         loadProfileName(encAbsolute, buf);
-        tft.fillRect(9, 27, (NAME_LENGHT * 6 + 1), menuItemHeight, BLUE);
+        tft.fillRect(9, 27, (NAME_LENGTH * 6 + 1), menuItemHeight, BLUE);
         tft.setCursor(10, 29);
         tft.setTextColor(WHITE, BLUE);
         tft.print(buf);
@@ -632,7 +640,7 @@ void renderMenuItem(const Menu::Item_t *mi, uint8_t pos) {
 
   // show values if in-place editable items
   if (getItemValueLabel(mi, buf)) {
-    tft.setCursor(70+MENU_TEXT_XPOS, y);
+    tft.setCursor(80+MENU_TEXT_XPOS, y);
     tft.print(buf);
     // tft.print("   ");
   }
@@ -657,14 +665,19 @@ MenuItem(miCycleStart,  "Start Cycle",  miEditProfile, Menu::NullItem, miExit, M
 #else
 MenuItem(miCycleStart,  "Start Autotune",  miEditProfile, Menu::NullItem, miExit, Menu::NullItem, menu_cycleStart);
 #endif
-MenuItem(miEditProfile, "Edit Profile", miLoadProfile, miCycleStart,   miExit, miRampUpRate, menuDummy);
-  MenuItem(miRampUpRate, "Ramp up  ",   miSoakTempA,      Menu::NullItem, miEditProfile, Menu::NullItem, menu_editNumericalValue);
-  MenuItem(miSoakTempA,   "Soak temp A", miSoakTempB,      miRampUpRate,   miEditProfile, Menu::NullItem, menu_editNumericalValue);
-  MenuItem(miSoakTempB,   "Soak temp B", miSoakTime,      miSoakTempA,   miEditProfile, Menu::NullItem, menu_editNumericalValue);
-  MenuItem(miSoakTime,   "Soak time", miPeakTemp,      miSoakTempB,     miEditProfile, Menu::NullItem, menu_editNumericalValue);
-  MenuItem(miPeakTemp,   "Peak temp", miPeakTime,      miSoakTime,     miEditProfile, Menu::NullItem, menu_editNumericalValue);
-  MenuItem(miPeakTime,   "Peak time", miRampDnRate,    miPeakTemp,     miEditProfile, Menu::NullItem, menu_editNumericalValue);
-  MenuItem(miRampDnRate, "Ramp down", Menu::NullItem,  miPeakTime,     miEditProfile, Menu::NullItem, menu_editNumericalValue);
+MenuItem(miEditProfile, "Edit Profile", miLoadProfile, miCycleStart,   miExit, miRampToSoakTime, menuDummy);
+  MenuItem(miRampToSoakTime, "Preheat time",   miRampToSoakTemp, Menu::NullItem, miEditProfile, Menu::NullItem, menu_editNumericalValue);
+  MenuItem(miRampToSoakTemp, "Preheat temp", miSoakTime, miRampToSoakTime,   miEditProfile, Menu::NullItem, menu_editNumericalValue);
+  MenuItem(miSoakTime,   "Soak time", miSoakTemp, miRampToSoakTemp,   miEditProfile, Menu::NullItem, menu_editNumericalValue);
+  MenuItem(miSoakTemp,   "Soak temp", miRampUpTime, miSoakTime, miEditProfile, Menu::NullItem, menu_editNumericalValue);
+  MenuItem(miRampUpTime,   "Ramp up time", miRampUpTemp,  miSoakTemp,     miEditProfile, Menu::NullItem, menu_editNumericalValue);
+  MenuItem(miRampUpTemp,   "Ramp up temp", miPeakTime,    miRampUpTime,     miEditProfile, Menu::NullItem, menu_editNumericalValue);
+  MenuItem(miPeakTime,   "Peak time", miPeakTemp,      miRampUpTemp,     miEditProfile, Menu::NullItem, menu_editNumericalValue);
+  MenuItem(miPeakTemp,   "Peak temp", miRampDownTime,    miPeakTime,     miEditProfile, Menu::NullItem, menu_editNumericalValue);
+  MenuItem(miRampDownTime,   "Ramp dn time", miRampDownTemp,      miSoakTemp,     miEditProfile, Menu::NullItem, menu_editNumericalValue);
+  MenuItem(miRampDownTemp,   "Ramp dn temp", miCoolDownTime,    miRampDownTime,     miEditProfile, Menu::NullItem, menu_editNumericalValue);
+  MenuItem(miCoolDownTime,   "Cool dn time", miCoolDownTemp,      miRampDownTemp,     miEditProfile, Menu::NullItem, menu_editNumericalValue);
+  MenuItem(miCoolDownTemp,   "Cool dn temp", Menu::NullItem,    miCoolDownTime,     miEditProfile, Menu::NullItem, menu_editNumericalValue);
 MenuItem(miLoadProfile,  "Load Profile",  miSaveProfile,  miEditProfile, miExit, Menu::NullItem, menu_saveLoadProfile);
 MenuItem(miSaveProfile,  "Save Profile",  miFanSettings,  miLoadProfile, miExit, Menu::NullItem, menu_saveLoadProfile);
 MenuItem(miFanSettings,  "Fan Speed",  miPidSettings,  miSaveProfile, miExit, Menu::NullItem, menu_editNumericalValue);
@@ -696,14 +709,14 @@ void drawInitialProcessDisplay()
     tft.print("Tuning ");
 #endif
 
-    tmp = h / (activeProfile.peakTemp * TEMPERATURE_WINDOW) * 100.0;
+    tmp = h / (activeProfile.peak.targetTemp * TEMPERATURE_WINDOW) * 100.0;
     pxPerC = tmp;
 
     float estimatedTotalTime = 0;//60 * 12;
     // estimate total run time for current profile
-    estimatedTotalTime = activeProfile.soakDuration + activeProfile.peakDuration;
-    estimatedTotalTime += (activeProfile.peakTemp - temperature)/(float)activeProfile.rampUpRate;
-    estimatedTotalTime += (activeProfile.peakTemp - temperature)/(float)activeProfile.rampDownRate;
+    estimatedTotalTime = activeProfile.soak.timeLength + activeProfile.peak.timeLength;
+    estimatedTotalTime += activeProfile.rampToSoak.timeLength + activeProfile.rampUp.timeLength;
+    estimatedTotalTime += activeProfile.rampDown.timeLength + activeProfile.coolDown.timeLength;
     estimatedTotalTime *= 1.2; // add some spare
 
     tmp = w / estimatedTotalTime ; 
@@ -720,7 +733,7 @@ void drawInitialProcessDisplay()
     Serial.println(pxPerSec);
 #endif   
     // 50°C grid
-    int16_t t = (uint16_t)(activeProfile.peakTemp * TEMPERATURE_WINDOW);
+    int16_t t = (uint16_t)(activeProfile.peak.targetTemp * TEMPERATURE_WINDOW);
     tft.setTextColor(tft.Color565(0xa0, 0xa0, 0xa0));
     tft.setTextSize(1);
     for (uint16_t tg = 0; tg < t; tg += 50) {
