@@ -13,9 +13,9 @@ extEEPROM myEEPROM(kbits_4, 1, 16, 0x50);
 
 
 // EEPROM offsets
-const uint16_t offsetFanSpeed   = maxProfiles * sizeof(profile_t) + 1; // one byte
-const uint16_t offsetProfileNum = maxProfiles * sizeof(profile_t) + 2; // one byte
-const uint16_t offsetPidConfig  = maxProfiles * sizeof(profile_t) + 3; // sizeof(PID_t)
+const uint16_t offsetFanSpeed   = maxProfiles * sizeof(profile_t) + 2; // one byte
+const uint16_t offsetProfileNum = maxProfiles * sizeof(profile_t) + 3; // one byte
+const uint16_t offsetPidConfig  = maxProfiles * sizeof(profile_t) + 4; // sizeof(PID_t)
 
 
 bool savePID() {

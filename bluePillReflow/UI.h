@@ -107,7 +107,6 @@ void displaySplash() {
   tft.print("(c)2017 Dasaki");
   tft.setCursor(0, 119);
   tft.print("(c)2017 Victor Perez");
-  delay(3000);
 }
 
 
@@ -208,7 +207,12 @@ extern const Menu::Item_t miRampToSoakTime, miRampToSoakTemp, miSoakTime, miSoak
 bool menuExit(const Menu::Action_t a) {
   clearLastMenuItemRenderState();
   MenuEngine.lastInvokedItem = &Menu::NullItem;
+  if (a == Menu::actionLabel) {
+      displaySplash();
+  }
+  else {
   menuUpdateRequest = true;
+  }
   return false;
 }
 
@@ -600,7 +604,10 @@ void toggleAutoTune();
 bool menu_cycleStart(const Menu::Action_t action) {
   if (action == Menu::actionDisplay) {
     startCycleZeroCrossTicks = zeroCrossTicks;
-    menuExit(action);
+    //menuExit(action);
+    clearLastMenuItemRenderState();
+    MenuEngine.lastInvokedItem = &Menu::NullItem;
+    menuUpdateRequest = true;
 
 #ifndef PIDTUNE    
     //currentState = RampToSoak;

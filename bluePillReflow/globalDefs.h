@@ -128,7 +128,7 @@ typedef struct profile_t {
 } profile_t;
 */
 
-const uint8_t maxProfiles = 10; // a profile takes 32bytes, so 512bytes of eeprom holds over 10
+const uint8_t maxProfiles = 12; // a profile takes 32bytes, so 512bytes of eeprom holds over 10
 
 typedef struct settings_t {
     profile_t profiles[maxProfiles];

@@ -296,6 +296,7 @@ void setup() {
 
 #ifdef WITH_SPLASH
     displaySplash();
+    delay(3000);
 #endif
 
 
