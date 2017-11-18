@@ -14,6 +14,8 @@
 #include <SPI.h>
 #include <Adafruit_GFX.h>            // PDQ: Core graphics library
 #include "TFT_ILI9163C\TFT_ILI9163C.h"
+//#include <Fonts\DSEG7ClassicBold_44.h>
+
 //#include "PDQ_ST7735_config.h"   // PDQ: ST7735 pins and other setup for this sketch
 //#include <PDQ_ST7735.h>          // PDQ: Hardware-specific driver library
 #include <Menu.h>
@@ -509,6 +511,9 @@ void loop(void)
                 collectTicks += airTemp[i].ticks;
             }
             float tempDiff = (airTemp[NUM_TEMP_READINGS - 1].temp - airTemp[0].temp);
+            /*
+             * TODO This float conversion is likely not needed.
+             */
             float timeDiff = collectTicks / (float)(TICKS_PER_SEC);
 
             rampRate = tempDiff / timeDiff;

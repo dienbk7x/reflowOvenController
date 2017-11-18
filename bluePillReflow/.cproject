@@ -77,19 +77,8 @@
 							<tool id="io.sloeber.tool.size.1111148702" name="Arduino tool Print Size" superClass="io.sloeber.tool.size"/>
 						</toolChain>
 					</folderInfo>
-					<folderInfo id="io.sloeber.core.toolChain.release.910932166.1991241803" name="/" resourcePath="Release/libraries/Adafruit-GFX-Library-master/fontconvert">
-						<toolChain id="io.sloeber.core.toolChain.release.1791887292" name="Arduino Toolchain (Sloeber edition)" superClass="io.sloeber.core.toolChain.release" unusedChildren="">
-							<tool id="io.sloeber.tool.sketch.compiler.cpp.1197531302" name="Arduino C++ Compiler" superClass="io.sloeber.tool.sketch.compiler.cpp.1467070722"/>
-							<tool id="io.sloeber.tool.compiler.c.903930928" name="Arduino C Compiler" superClass="io.sloeber.tool.compiler.c.1420540726"/>
-							<tool id="io.sloeber.tool.sketch.compiler.s.1912950001" name="Arduino Assembler" superClass="io.sloeber.tool.sketch.compiler.s.1059592045"/>
-							<tool id="io.sloeber.tool.ar.1755975780" name="Arduino archiver" superClass="io.sloeber.tool.ar.370738389"/>
-							<tool id="io.sloeber.tool.combine.994386525" name="Arduino combiner" superClass="io.sloeber.tool.combine.371546100"/>
-							<tool id="io.sloeber.tool.objcopy.eep.344782144" name="Arduino tool Create eeprom" superClass="io.sloeber.tool.objcopy.eep.1228319883"/>
-							<tool id="io.sloeber.tool.size.2102871907" name="Arduino tool Print Size" superClass="io.sloeber.tool.size.1111148702"/>
-						</toolChain>
-					</folderInfo>
 					<sourceEntries>
-						<entry excluding="libraries/Adafruit-GFX-Library-master/fontconvert|libraries/Adafruit-GFX-Library/Fonts|libraries/Adafruit-GFX-Library/fontconvert|libraries/Adafruit_GFX_Library/1.1.9|TFT_ILI9163C/_utility|TFT_ILI9163C/examples|libraries/Adafruit_GFX_Library/Fonts|libraries/Adafruit_GFX_Library/fontconvert|libraries/PDQ_ST7735/tools|libraries/PDQ_GFX/TTF2GFX|libraries/PDQ_GFX/Fonts|libraries/PDQ_GFX/fontconvert|libraries/PDQ_GFX_Libs/PDQ_ST7781|libraries/PDQ_GFX_Libs/PDQ_ILI9341|libraries/PDQ_GFX_Libs/PDQ_ILI9340|libraries/MAX6675-library/.github|libraries/?*/**/?xamples/**|libraries/?*/**/?xtras/**|libraries/?*/**/test*/**|libraries/?*/**/third-party/**|libraries**/._*" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="libraries/Adafruit-GFX-Library-master/Fonts|libraries/Adafruit-GFX-Library-master/fontconvert|libraries/Adafruit-GFX-Library/Fonts|libraries/Adafruit-GFX-Library/fontconvert|libraries/Adafruit_GFX_Library/1.1.9|TFT_ILI9163C/_utility|TFT_ILI9163C/examples|libraries/Adafruit_GFX_Library/Fonts|libraries/Adafruit_GFX_Library/fontconvert|libraries/PDQ_ST7735/tools|libraries/PDQ_GFX/TTF2GFX|libraries/PDQ_GFX/Fonts|libraries/PDQ_GFX/fontconvert|libraries/PDQ_GFX_Libs/PDQ_ST7781|libraries/PDQ_GFX_Libs/PDQ_ILI9341|libraries/PDQ_GFX_Libs/PDQ_ILI9340|libraries/MAX6675-library/.github|libraries/?*/**/?xamples/**|libraries/?*/**/?xtras/**|libraries/?*/**/test*/**|libraries/?*/**/third-party/**|libraries**/._*" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

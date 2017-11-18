@@ -5,6 +5,7 @@
 //#include <PDQ_GFX.h>        // PDQ: Core graphics library
 #include <SPI.h>
 #include "TFT_ILI9163C\TFT_ILI9163C.h"
+#include <Fonts\DSEG7ClassicBold_44.h>
 //#include "PDQ_ST7735_config.h"      // PDQ: ST7735 pins and other setup for this sketch
 //#include <PDQ_ST7735.h>     // PDQ: Hardware-specific driver library
 //#define ST7735_RST_PIN 8
@@ -166,7 +167,8 @@ void displayThermocoupleData(uint8_t xpos, uint8_t ypos) {
   tft.setTextColor(BLACK, WHITE);
 
   // temperature
-  tft.setTextSize(2);
+  //tft.setTextSize(2);
+  tft.setFont(&DSEG7ClassicBold_44);
   alignRightPrefix((int)temperature);
   switch (tcStat) {
     case 0:
@@ -177,6 +179,7 @@ void displayThermocoupleData(uint8_t xpos, uint8_t ypos) {
       tft.print("---");
       break;
   }
+  tft.setFont(NULL);
 }
 
 
@@ -740,7 +743,7 @@ void drawInitialProcessDisplay()
     Serial.print("/");
     Serial.println(pxPerSec);
 #endif   
-    // 50Â°C grid
+    // 50°C grid
     int16_t t = (uint16_t)(activeProfile.peak.targetTemp * TEMPERATURE_WINDOW);
     tft.setTextColor(tft.Color565(0xa0, 0xa0, 0xa0));
     tft.setTextSize(1);
@@ -817,7 +820,7 @@ void updateProcessDisplay() {
   tft.print("\367C  ");
 
   if(currentState != Preheat) {
-      // draw temperature curves
+      // draw temperature curves when not preheating to 50C
 
       if (xOffset >= elapsed) {
           xOffset = 0;
