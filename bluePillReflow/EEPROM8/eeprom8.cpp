@@ -1,4 +1,4 @@
-#include <eeprom8.h>
+#include "eeprom8.h"
 
 
 uint8_t EEPROM8_getValue(uint8_t variable) {
@@ -26,7 +26,7 @@ boolean EEPROM8_storeValue(uint8_t variable, uint8_t value) {
   uint32_t base = pageBases[currentPage];
   bool err = false;
   
-  for (uint32_t offset = 4 ; offset < EEPROM_PAGE_SIZE ; offset+=2) {
+  for (uint16_t offset = 4 ; offset < EEPROM_PAGE_SIZE ; offset+=2) {
     if (GET_HALF_WORD(base+offset) == 0xFFFF) {
       return writeHalfWord(base+offset, variable | ((uint16_t)value<<8));
     }

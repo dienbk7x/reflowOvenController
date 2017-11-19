@@ -5,7 +5,7 @@
 //#include <PDQ_GFX.h>        // PDQ: Core graphics library
 #include <SPI.h>
 #include "TFT_ILI9163C\TFT_ILI9163C.h"
-#include <Fonts\DSEG7ClassicBold_44.h>
+#include <Fonts\FreeSans9pt7b.h>
 //#include "PDQ_ST7735_config.h"      // PDQ: ST7735 pins and other setup for this sketch
 //#include <PDQ_ST7735.h>     // PDQ: Hardware-specific driver library
 //#define ST7735_RST_PIN 8
@@ -167,8 +167,8 @@ void displayThermocoupleData(uint8_t xpos, uint8_t ypos) {
   tft.setTextColor(BLACK, WHITE);
 
   // temperature
-  //tft.setTextSize(2);
-  tft.setFont(&DSEG7ClassicBold_44);
+  tft.setTextSize(2);
+  //tft.setFont(&FreeSans9pt7b);
   alignRightPrefix((int)temperature);
   switch (tcStat) {
     case 0:
@@ -560,7 +560,7 @@ bool menu_saveLoadProfile(const Menu::Action_t action) {
       tft.print("Doubleclick to exit");
     }
 
-    encAbsolute = constrain(encAbsolute, 0, maxProfiles);
+    encAbsolute = constrain(encAbsolute, 0, maxProfiles-1);
 
     //tft.setCursor(10, 80);
     if (encAbsolute != encLastAbsolute) {

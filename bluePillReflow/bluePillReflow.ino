@@ -253,9 +253,11 @@ void setup() {
     setupPins();
 
     setupTFT();
-
+#ifndef FLASH_SETTINGS
     myEEPROM.begin(myEEPROM.twiClock100kHz);
-
+#else
+    EEPROM8_init();
+#endif
     if (firstRun()) {
         factoryReset();
         loadParameters(0);
@@ -787,9 +789,17 @@ bool firstRun() {
     unsigned int offset = (2) * sizeof(profile_t);
 
     for (uint16_t i = offset; i < offset + sizeof(profile_t); i++) {
+#ifndef FLASH_SETTINGS
         if (myEEPROM.read(i) != 255) {
             return false;
         }
+#else // Leave saving settings as optional.
+        loadFanSpeed();
+        if(fanAssistSpeed > 100 || fanAssistSpeed < 0) {
+            return true;
+        }
+        return false;
+#endif
     }
 #endif
 #endif

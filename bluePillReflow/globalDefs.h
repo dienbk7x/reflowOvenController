@@ -13,7 +13,13 @@
 #define FAN_ON      HIGH
 
 /*
- * Max lenght
+ * USE Flash to store settings and profiles
+ */
+
+#define FLASH_SETTINGS
+
+/*
+ * Profile name length
  */
 
 #define NAME_LENGTH 12
@@ -128,7 +134,7 @@ typedef struct profile_t {
 } profile_t;
 */
 
-const uint8_t maxProfiles = 12; // a profile takes 32bytes, so 512bytes of eeprom holds over 10
+const uint8_t maxProfiles = 5; // a profile takes 32bytes, so 512bytes of eeprom holds over 10
 
 typedef struct settings_t {
     profile_t profiles[maxProfiles];
@@ -155,7 +161,7 @@ const profile_t romProfiles[] {
     {"0Pb-Wurth", 90, 150, 120, 200, 20, 245, 20, 245, 20, 180, 60, 50},
     {"Sn42Bi58", 90, 120, 90, 145, 20, 170, 20, 170, 20, 145, 60, 50},
 //    {"Sn42Bi58", 0.8, 6.0, 100, 135, 90, 160, 10, 0},
-    {"0Pb-Renesas", 90, 150, 120, 200, 20, 255, 20, 255, 20, 180, 60, 50}
+    //{"0Pb-Renesas", 90, 150, 120, 200, 20, 255, 20, 255, 20, 180, 60, 50}
 };
 
 
