@@ -5,7 +5,9 @@
 #include <SPI.h>
 #include "config.h"
 #include "globalDefs.h"
+#include "SimpleKalmanFilter/src/SimpleKalmanFilter.h"
 
+SimpleKalmanFilter thermocoupleFilter(1, 1, 0.01);
 MAX6675 thermocouple;
 
 void readThermocouple() {
@@ -21,7 +23,8 @@ void readThermocouple() {
     tcStat = 1;
   }
   else {
-    temperature = reading;
+    temperature = thermocoupleFilter.updateEstimate(reading);
+
     tcStat = 0;
   }
   

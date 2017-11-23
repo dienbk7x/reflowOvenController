@@ -2,11 +2,12 @@
 //This is a automatic generated file
 //Please do not modify this file
 //If you touch this file your change will be overwritten during the next build
-//This file has been generated on 2017-11-22 23:24:47
+//This file has been generated on 2017-11-23 10:51:33
 
 #include "Arduino.h"
 #include "globalDefs.h"
 #include "helpers.h"
+#include "SimpleKalmanFilter/src/SimpleKalmanFilter.h"
 #include "eepromHelpers.h"
 #include <PID_v1.h>
 #include "PID_AutoTune_v0/PID_AutoTune_v0.h"

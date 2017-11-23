@@ -71,7 +71,7 @@ PID_t heaterPID = { FACTORY_KP, FACTORY_KI,  FACTORY_KD };
  *  From: https://github.com/rocketscream/TinyReflowController/blob/master/TinyReflowController.ino
  *  divided by 5 because the output range there is 0-2000 and here 0-100
  */
-const PID_t preheatPID = { 3, 0.001,  50 };
+const PID_t preheatPID = { 3, 0.001,  75 };
 const PID_t soakPID = { 1.9, 0.002,  125 }; //autotune recommendation
 const PID_t reflowPID = { 10, 0.00,  25 };
 

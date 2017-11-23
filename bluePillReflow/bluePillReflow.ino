@@ -7,6 +7,7 @@
 
 #include "globalDefs.h"
 #include "helpers.h"
+#include "SimpleKalmanFilter/src/SimpleKalmanFilter.h"
 
 //#include <eeprom.h>
 #include "eepromHelpers.h"
@@ -555,7 +556,7 @@ void loop(void)
                 PID_1.SetMode(MANUAL); // Clear old counters to start fresh
                 PID_1.SetMode(AUTOMATIC);
                 PID_1.SetControllerDirection(DIRECT);
-                PID_1.SetTunings(preheatPID.Kp, preheatPID.Ki, preheatPID.Kd, P_ON_E);
+                PID_1.SetTunings(preheatPID.Kp, preheatPID.Ki, preheatPID.Kd, P_ON_M);
                 pidAggresiveUsed = true;
                 tone(PIN_BEEPER,BEEP_FREQ,100);
             }
@@ -615,7 +616,7 @@ void loop(void)
              * If we have been at least the minimum time in soak mode and have reached soakTemB
              * move to the next stage
              */
-            if ((averageT1 >= activeSegment->targetTemp - 5) && (zeroCrossTicks - stateChangedTicks >= (uint32_t)activeSegment->timeLength * TICKS_PER_SEC)) {
+            if ((averageT1 >= activeSegment->targetTemp - 2) && (zeroCrossTicks - stateChangedTicks >= (uint32_t)activeSegment->timeLength * TICKS_PER_SEC)) {
                 currentState = RampUp;
             }
             break;
@@ -625,13 +626,22 @@ void loop(void)
                 stateChanged = false;
                 lastCycleTicks = zeroCrossTicks;
                 activeSegment = &activeProfile.rampUp;
+#ifdef FULL_POWER_RAMP
+                PID_1.SetMode(MANUAL); // Clear old counters to start fresh
+                Output = 100;
+#else
                 PID_1.SetTunings(reflowPID.Kp, reflowPID.Ki, reflowPID.Kd, P_ON_E);
+#endif
                 pidAggresiveUsed = true;
                 targetRate = ((activeSegment->targetTemp - averageT1) / activeSegment->timeLength);
             }
 
             if ((pidAggresiveUsed == true) && (averageT1 + THRESHOLD_TO_CONSERVATIVE_PID/2 > activeSegment->targetTemp)){
                 pidAggresiveUsed = false;
+#ifdef FULL_POWER_RAMP
+                Output = 0;
+                PID_1.SetMode(AUTOMATIC);
+#endif
                 PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd); // TODO: need to change this, but ok for now
             }
 
@@ -643,7 +653,7 @@ void loop(void)
             /*
              * Switch to Peak stage when current temperature is within 5 degrees.
              */
-            if (averageT1 >= activeSegment->targetTemp - 5) {
+            if (averageT1 >= activeSegment->targetTemp - 3) {
             //if (Setpoint >= activeProfile.peakTemp - 1) {
                 //Setpoint = activeSegment->targetTemp;
                 currentState = Peak;

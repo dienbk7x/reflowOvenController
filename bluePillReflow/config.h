@@ -5,12 +5,11 @@
 
 //#define ALWAYS_FIRST_RUN
 //#define FAKE_HW 1
-//#define PIDTUNE 1 // autotune wouldn't fit in the 28k available on my arduino pro micro.
-#define WITH_BEEPER // Enables Beeper
-//#define WITH_SERVO // Enables Lid opening Servo (not yet implemented)
+#define WITH_BEEPER         // Enables Beeper
+//#define WITH_SERVO        // Enables Lid opening Servo (not yet implemented)
 //#define SERIAL_VERBOSE
-#define WITH_CHECKSUM 1 // Check checksum in the profiles.
-//define PIDTUNE 1 // Allows autotuning of PID values.
+#define WITH_CHECKSUM 1     // Check checksum in the profiles.
+#define FULL_POWER_RAMP 1   // Apply 100% power during rampup rather than PID
 
 
 // run a calibration loop that measures how many timer ticks occur between 2 zero corssings
