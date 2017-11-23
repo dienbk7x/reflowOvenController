@@ -72,7 +72,7 @@ static const uint16_t DEFAULT_SOAK_DURATION     = 120;
 static const uint16_t DEFAULT_PEAK_TEPM         = 245;
 static const uint16_t DEFAULT_PEAK_DURATION     = 15;
 static const float DEFAULT_RAMP_UP_RATE         = 2.0; // degrees / second (keep it about 1/2 of maximum to prevent PID overshooting)
-static const float DEFAULT_RAMP_DOWN_RATE       = 4.0; // degrees / second
+static const float DEFAULT_RAMP_DOWN_RATE       = 3.0; // degrees / second
 static const uint8_t FACTORY_FAN_ASSIST_SPEED   = 100;
 
 
@@ -94,11 +94,15 @@ Experimental method to tune PID:
 > Decrease Ki by a factor of 2-4.
 
 */
-#define PID_SAMPLE_TIME 200
-#define FACTORY_KP 4.0// 1.75 //4.0
-#define FACTORY_KI 0.0 // 0.03 // 0.05
-#define FACTORY_KD 2.0 //3.0//2.0
+#define PID_SAMPLE_TIME 500
+#define FACTORY_KP 1.9     //0.6// 1.75 //4.0
+#define FACTORY_KI 0.002    //0.01 // 0.03 // 0.05
+#define FACTORY_KD 125       //19.70 //3.0//2.0
+#define THRESHOLD_TO_CONSERVATIVE_PID 20
 
+#define AUTOTUNE_TEMP   130.0
+#define AUTOTUNE_TIME   1000
+#define THERMAL_INERTIA 15   // in degrees celsius
 
 
 

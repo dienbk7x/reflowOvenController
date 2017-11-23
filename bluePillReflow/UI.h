@@ -284,16 +284,16 @@ bool getItemValueLabel(const Menu::Item_t *mi, char *label) {
 
   if (isPidSetting(mi)) {
     p = label;
-    ftoa(p, *dValue, (isPidSetting(mi)) ? 2 : 1); // need greater precision with pid values
+    ftoa(p, *dValue, ( mi == &miPidSettingI ) ? 3 : 2); // need greater precision with Ki pid values
   }
   else {
     if (isTempSetting (mi)) {
       itostr(label, *iValue, "\367C");
     }
-    if (isTimeSetting (mi)) {
+    else if (isTimeSetting (mi)) {
       itostr(label, *iValue, "s");
     }
-    if (mi == &miFanSettings) {
+    else if (mi == &miFanSettings) {
       itostr(label, *iValue, "%");
     }
   }
@@ -322,7 +322,8 @@ bool menu_editNumericalValue(const Menu::Action_t action) {
         y = currentlyRenderedItems[i].pos * menuItemHeight + 2;
 
         /*
-         * Removed this check to overfill the space before rewriting. Could also print
+         * Removed this check to overfill the space before rewriting, but did not work.
+         * Could also print
          * a space after the value,need to test.
          */
         if (initial) {
@@ -340,7 +341,9 @@ bool menu_editNumericalValue(const Menu::Action_t action) {
     float  *dValue = NULL;
     getItemValuePointer(MenuEngine.currentItem, &dValue, &iValue);
 
-    if (isPidSetting(MenuEngine.currentItem)) {
+    if (MenuEngine.currentItem == &miPidSettingP || \
+        MenuEngine.currentItem == &miPidSettingD) {
+    //if (isPidSetting(MenuEngine.currentItem)) {
       float tmp;
       float factor = 100;
 
@@ -357,6 +360,26 @@ bool menu_editNumericalValue(const Menu::Action_t action) {
         *dValue = tmp;
       }
     }
+
+    else if ( MenuEngine.currentItem == &miPidSettingI ) {
+    //if (isPidSetting(MenuEngine.currentItem)) {
+      float tmp;
+      float factor = 1000;
+
+      if (initial) {
+        tmp = *dValue;
+        tmp *= factor;
+        encAbsolute = (int16_t)tmp;
+        encLastAbsolute = encAbsolute + 1;
+      }
+      else {
+        encAbsolute = max(encAbsolute, 0);
+        tmp = encAbsolute;
+        tmp /= factor;
+        *dValue = tmp;
+      }
+    }
+
     else { // integers, clamp fan 0-100 and temp and time 0-300
       if (initial) {
           encAbsolute = *iValue;
@@ -419,7 +442,7 @@ void factoryReset() {
   tft.print("Resetting...");
 
   // then save factory profiles settings to corresponding slots
-  for (uint8_t i = 0; i < (sizeof( romProfiles ) / sizeof( romProfiles[0])); i++) {
+  for (uint8_t i = 0; (i < (sizeof( romProfiles ) / sizeof( romProfiles[0])) && (i < maxProfiles)); i++) {
       strcpy (activeProfile.name,  romProfiles[i].name);
       activeProfile.rampToSoak.targetTemp   = romProfiles[i].rampToSoak.targetTemp;
       activeProfile.rampToSoak.timeLength   = romProfiles[i].rampToSoak.timeLength;
@@ -612,12 +635,25 @@ bool menu_cycleStart(const Menu::Action_t action) {
     MenuEngine.lastInvokedItem = &Menu::NullItem;
     menuUpdateRequest = true;
 
-#ifndef PIDTUNE    
     //currentState = RampToSoak;
     currentState = Preheat;
-#else
+    initialProcessDisplay = false;
+    menuUpdateRequest = false;
+  }
+
+  return true;
+}
+
+bool menu_tuneStart(const Menu::Action_t action) {
+  if (action == Menu::actionDisplay) {
+    startCycleZeroCrossTicks = zeroCrossTicks;
+    //menuExit(action);
+    clearLastMenuItemRenderState();
+    MenuEngine.lastInvokedItem = &Menu::NullItem;
+    menuUpdateRequest = true;
+
     toggleAutoTune();
-#endif
+
     initialProcessDisplay = false;
     menuUpdateRequest = false;
   }
@@ -671,12 +707,9 @@ void renderMenuItem(const Menu::Item_t *mi, uint8_t pos) {
 
 MenuItem(miExit, "Menu", Menu::NullItem, Menu::NullItem, Menu::NullItem, miCycleStart, menuExit);
 
-#ifndef PIDTUNE
-MenuItem(miCycleStart,  "Start Cycle",  miEditProfile, Menu::NullItem, miExit, Menu::NullItem, menu_cycleStart);
-#else
-MenuItem(miCycleStart,  "Start Autotune",  miEditProfile, Menu::NullItem, miExit, Menu::NullItem, menu_cycleStart);
-#endif
-MenuItem(miEditProfile, "Edit Profile", miLoadProfile, miCycleStart,   miExit, miRampToSoakTime, menuDummy);
+MenuItem(miCycleStart,  "Start Cycle",  miTuneStart, Menu::NullItem, miExit, Menu::NullItem, menu_cycleStart);
+MenuItem(miTuneStart,  "Start Autotune",  miEditProfile, miCycleStart, miExit, Menu::NullItem, menu_tuneStart);
+MenuItem(miEditProfile, "Edit Profile", miLoadProfile, miTuneStart,   miExit, miRampToSoakTime, menuDummy);
   MenuItem(miRampToSoakTime, "Preheat time",   miRampToSoakTemp, Menu::NullItem, miEditProfile, Menu::NullItem, menu_editNumericalValue);
   MenuItem(miRampToSoakTemp, "Preheat temp", miSoakTime, miRampToSoakTime,   miEditProfile, Menu::NullItem, menu_editNumericalValue);
   MenuItem(miSoakTime,   "Soak time", miSoakTemp, miRampToSoakTemp,   miEditProfile, Menu::NullItem, menu_editNumericalValue);
@@ -710,18 +743,13 @@ void drawInitialProcessDisplay()
     tft.fillScreen(WHITE);
     tft.fillRect(0, 0, tft.width(), menuItemHeight, BLUE);
     tft.setCursor(1, 2);
-#ifndef PIDTUNE
+if(currentState != Tune) {
     /*
      * TODO: print profile name
      */
     tft.print("Profile ");
-    tft.print(activeProfileId);
-#else
-    tft.print("Tuning ");
-#endif
-
-    tmp = h / (activeProfile.peak.targetTemp * TEMPERATURE_WINDOW) * 100.0;
-    pxPerC = tmp;
+    tft.print(activeProfile.name);
+    pxPerC = h / (activeProfile.peak.targetTemp * TEMPERATURE_WINDOW) * 100.0;
 
     float estimatedTotalTime = 0;//60 * 12;
     // estimate total run time for current profile
@@ -730,8 +758,16 @@ void drawInitialProcessDisplay()
     estimatedTotalTime += activeProfile.rampDown.timeLength + activeProfile.coolDown.timeLength;
     estimatedTotalTime *= 1.2; // add some spare
 
-    tmp = w / estimatedTotalTime ; 
+    tmp = w / estimatedTotalTime ;
     pxPerSec = (float)tmp;
+}
+else {
+    tft.print("Tuning ");
+    pxPerC = h / (AUTOTUNE_TEMP * TEMPERATURE_WINDOW) * 100.0;
+    pxPerSec = (float)w / AUTOTUNE_TIME;
+}
+
+
 
 #ifdef SERIAL_VERBOSE
  Serial.print("estimatedTotalTime: ");
@@ -744,7 +780,13 @@ void drawInitialProcessDisplay()
     Serial.println(pxPerSec);
 #endif   
     // 50°C grid
-    int16_t t = (uint16_t)(activeProfile.peak.targetTemp * TEMPERATURE_WINDOW);
+    int16_t t;
+    if(currentState != Tune) {
+        t = (activeProfile.peak.targetTemp * TEMPERATURE_WINDOW);
+    }
+    else {
+        t = AUTOTUNE_TEMP * TEMPERATURE_WINDOW;
+    }
     tft.setTextColor(tft.Color565(0xa0, 0xa0, 0xa0));
     tft.setTextSize(1);
     for (uint16_t tg = 0; tg < t; tg += 50) {
@@ -788,7 +830,6 @@ void updateProcessDisplay() {
 
   tft.setTextSize(1);
 
-#ifndef PIDTUNE
   // current state
   y -= 2;
   tft.setCursor(tft.width()-65, y);
@@ -804,12 +845,13 @@ void updateProcessDisplay() {
     casePrintState(RampDown);
     casePrintState(CoolDown);
     casePrintState(Complete);
+    casePrintState(Tune);
     default: tft.print((uint8_t)currentState); break;
   }
   tft.print("        "); // lazy: fill up space
 
   tft.setTextColor(BLACK, WHITE);
-#endif
+
 
   // set point
   y += 10;

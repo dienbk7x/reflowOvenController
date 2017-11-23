@@ -164,6 +164,6 @@ bool saveParameters(uint8_t profile) {
   return true;
 }
 
-#endif FLASH_SETTINGS
+#endif //FLASH_SETTINGS
 
 #endif //EEPROM_HELPERS_H
