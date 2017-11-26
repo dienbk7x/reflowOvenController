@@ -39,25 +39,25 @@ static const uint8_t LCD_ROTATION = 3; // 0/2-> portrait, 1/3-> landscape
  * PB12 SPI2 MISO   (not used)
  */
 
-static const uint8_t PIN_TC_CS   = PA4;
-static const uint8_t PIN_TC_DO   = PA7;
-static const uint8_t PIN_TC_CLK  = PA5;
-static const uint8_t PIN_HEATER = PA8; //
-static const uint8_t PIN_FAN    = PA9; //
-static const uint8_t PIN_BEEPER = PB9; // Beeper Out
+static const char PIN_TC_CS   = PA4;
+static const char PIN_TC_DO   = PA7;
+static const char PIN_TC_CLK  = PA5;
+static const char PIN_HEATER = PA8; //
+static const char PIN_FAN    = PA9; //
+static const char PIN_BEEPER = PB9; // Beeper Out
 // --- encoder
-static const uint8_t PIN_ENC_A           = PA2; //
-static const uint8_t PIN_ENC_B           = PA3; //
-static const uint8_t PIN_ENC_BTN         = PA1; //
+static const char PIN_ENC_A           = PA2; //
+static const char PIN_ENC_B           = PA3; //
+static const char PIN_ENC_BTN         = PA1; //
 static const uint8_t ENC_STEPS_PER_NOTCH = 4;
 static const boolean IS_ENC_ACTIVE       = false; // encoder module actively fed with VCC ( seems to works bad if set to true )
 
 static const uint16_t BEEP_FREQ = 1976; // B6 note
 
-static const uint8_t PIN_ZX = PA10; // pin for zero crossing detector
-static const uint8_t INT_ZX = PIN_ZX; // interrupt for zero crossing detector
+static const char PIN_ZX = PA10; // pin for zero crossing detector
+static const char INT_ZX = PIN_ZX; // interrupt for zero crossing detector
 
-static const uint8_t NUM_TEMP_READINGS  = 5;
+static const uint8_t NUM_TEMP_READINGS  = 2; // This used to be 5. Reduced to 2 thanks to using Kalman Filter. Seems stable.
 static const uint8_t TC_ERROR_TOLERANCE = 5; // allow for n consecutive errors due to noisy power supply before bailing out
 static const float   TEMP_COMPENSATION  = 1.0; // correction factor to match temperature measured with other device
 
@@ -99,10 +99,11 @@ Experimental method to tune PID:
 #define FACTORY_KD 125       //19.70 //3.0//2.0
 #define THRESHOLD_TO_CONSERVATIVE_PID 20
 
-#define AUTOTUNE_TEMP   130.0
-#define AUTOTUNE_TIME   1000
+#define AUTOTUNE_TEMP   130.0 // Autotune temp on boot up. Can be changed on menu.
+#define AUTOTUNE_TIME   600  // Estimated time, just for drawing the graph. Will wrap the screen after this time
 #define THERMAL_INERTIA 15   // in degrees celsius
 
+#define MAX_CYCLE_TIME 600
 
 
 

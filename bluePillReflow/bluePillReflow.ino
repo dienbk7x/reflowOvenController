@@ -52,10 +52,14 @@ uint32_t stateChangedTicks = 0;
 PID PID_1(&Input, &Output, &Setpoint, heaterPID.Kp, heaterPID.Ki, heaterPID.Kd, DIRECT);
 
 PID_ATune PIDTune(&Input, &Output);
+/*
+ * These below should be moved to config.h or globalDefs.h
+ */
 
 float  aTuneStep       =  30,
     aTuneNoise      =   1,
-    aTuneStartValue =  40; // is set to Output, i.e. 0-100% of Heater
+    aTuneStartValue =  75;  // is set to Output, i.e. 0-100% of Heater, best to match what's used
+                            // to start normal heating (75%)
 
 unsigned int aTuneLookBack = 30;
 
@@ -371,11 +375,10 @@ void toggleAutoTune() {
     if(currentState != Tune) { //Set the output to the desired starting frequency.
         currentState = Tune;
         tunePreheated = false;
-        //Output = aTuneStartValue;
-        Output = 0;
+        Output = aTuneStartValue;
         PID_1.SetMode(MANUAL); // Clear old counters to start fresh
         PID_1.SetControllerDirection(DIRECT);
-        PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd, P_ON_M);
+        PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd, P_ON_E);
         PID_1.SetMode(AUTOMATIC);
 
         PIDTune.SetControlType(PID_ATune::TYREUS_LUYBEN_PID);
@@ -508,7 +511,7 @@ void loop(void)
             /* todo: is this float casting needed really?
              *
              */
-            averageT1 = totalT1 / (float)NUM_TEMP_READINGS;  // calculate the average temp
+            averageT1 = totalT1 / NUM_TEMP_READINGS;  // calculate the average temp
 
             // need to keep track of a few past readings in order to work out rate of rise
             for (int i = 1; i < NUM_TEMP_READINGS; i++) { // iterate over all previous entries, moving them backwards one index
@@ -556,7 +559,7 @@ void loop(void)
                 PID_1.SetMode(MANUAL); // Clear old counters to start fresh
                 PID_1.SetMode(AUTOMATIC);
                 PID_1.SetControllerDirection(DIRECT);
-                PID_1.SetTunings(preheatPID.Kp, preheatPID.Ki, preheatPID.Kd, P_ON_M);
+                PID_1.SetTunings(rampPID.Kp, rampPID.Ki, rampPID.Kd, P_ON_E);
                 pidAggresiveUsed = true;
                 tone(PIN_BEEPER,BEEP_FREQ,100);
             }
@@ -576,16 +579,21 @@ void loop(void)
                 PID_1.SetControllerDirection(DIRECT);
                 PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd);
                 */
-                Setpoint = Input + 1;
+                Setpoint = averageT1 + 5;
 #ifdef WITH_BEEPER
                 tone(PIN_BEEPER,BEEP_FREQ,100);
 #endif
                 activeSegment = &activeProfile.rampToSoak;
                 targetRate = ((activeSegment->targetTemp - averageT1) / activeSegment->timeLength);
             }
+            /*
+             * Change to smoother PID if current temp 20 degrees from max soak temp.
+             */
             if (pidAggresiveUsed == true && averageT1 + THRESHOLD_TO_CONSERVATIVE_PID > activeSegment->targetTemp){
                 pidAggresiveUsed = false;
-                PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd); // TODO: need to change this, but ok for now
+                PID_1.SetMode(MANUAL);
+                PID_1.SetMode(AUTOMATIC);
+                PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd);
             }
 
             if (Setpoint < activeSegment->targetTemp){
@@ -602,7 +610,7 @@ void loop(void)
                 lastCycleTicks = zeroCrossTicks;
                 stateChanged = false;
                 activeSegment = &activeProfile.soak;
-                PID_1.SetTunings(soakPID.Kp, soakPID.Ki, soakPID.Kd, P_ON_M);
+                PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd, P_ON_E);
                 targetRate = ((activeSegment->targetTemp - averageT1) / activeSegment->timeLength);
             }
 
@@ -630,7 +638,7 @@ void loop(void)
                 PID_1.SetMode(MANUAL); // Clear old counters to start fresh
                 Output = 100;
 #else
-                PID_1.SetTunings(reflowPID.Kp, reflowPID.Ki, reflowPID.Kd, P_ON_E);
+                PID_1.SetTunings(rampPID.Kp, rampPID.Ki, rampPID.Kd, P_ON_E);
 #endif
                 pidAggresiveUsed = true;
                 targetRate = ((activeSegment->targetTemp - averageT1) / activeSegment->timeLength);
@@ -642,7 +650,7 @@ void loop(void)
                 Output = 0;
                 PID_1.SetMode(AUTOMATIC);
 #endif
-                PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd); // TODO: need to change this, but ok for now
+                PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd);
             }
 
 
@@ -653,7 +661,7 @@ void loop(void)
             /*
              * Switch to Peak stage when current temperature is within 5 degrees.
              */
-            if (averageT1 >= activeSegment->targetTemp - 3) {
+            if (averageT1 >= activeSegment->targetTemp) {
             //if (Setpoint >= activeProfile.peakTemp - 1) {
                 //Setpoint = activeSegment->targetTemp;
                 currentState = Peak;
@@ -718,7 +726,7 @@ void loop(void)
                 PID_1.SetControllerDirection(REVERSE);
                 PID_1.SetTunings(fanPID.Kp, fanPID.Ki, fanPID.Kd, P_ON_E);
                 //activeSegment = &activeProfile.coolDown;
-                Setpoint = averageT1;
+                Setpoint = Setpoint - 5;
                 if (Output < 66) Output = 66;
 /*                if (averageT1 > idleTemp){
                     targetRate = ((averageT1 - idleTemp ) / activeSegment->timeLength);
@@ -752,7 +760,7 @@ void loop(void)
         {
             if (stateChanged) {
                 stateChanged = false;
-                Setpoint = AUTOTUNE_TEMP;
+                Setpoint = tuneTemp;
             }
             if (tunePreheated) {
             int8_t val = PIDTune.Runtime();
@@ -802,11 +810,19 @@ void loop(void)
     /*
      * TODO: Add safety checks:
      * Enable watchdog, and reset watchdog in safety check function, so if it's not called, it reboots
-     * Check if temp over 260: If so, beep and switch to cool down.
-     * Check if a heating mode for long than X seconds, if so switch to cool down
      * Check if in heating mode and temp is not increasing over a period of time, if so,
      * switch to cool down.
      */
+    if (averageT1 >275) abortWithError(20); // Abort if temp over 275 degrees
+    // abort if in heating cycles for more than 10 minutes
+    if (currentState >= Preheat && currentState <= Peak && (zeroCrossTicks - startCycleZeroCrossTicks) >= (MAX_CYCLE_TIME * TICKS_PER_SEC)){
+        tone(PIN_BEEPER,BEEP_FREQ,500);  //End Beep
+        delay(1500);
+        tone(PIN_BEEPER,BEEP_FREQ,500);
+        tft.setCursor(5, 40);
+        tft.print("Too long, aborting");
+        currentState = CoolDown;
+    }
     // safety check that we're not doing something stupid.
     // if the thermocouple is wired backwards, temp goes DOWN when it increases
     // during cooling, the t962a lags a long way behind, hence the hugely lenient cooling allowance.

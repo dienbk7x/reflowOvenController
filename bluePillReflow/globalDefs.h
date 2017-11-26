@@ -44,7 +44,7 @@ const char * ver = "3.3";
 
 bool tunePreheated = false;
 uint32 tunePreheatTime = 0;
-//float tuneTemp = 0.0;
+int16_t tuneTemp = 130;
 
 float temperature;
 uint8_t tcStat = 0;
@@ -67,13 +67,14 @@ typedef struct PID_t {
 } PID_t;
 
 PID_t heaterPID = { FACTORY_KP, FACTORY_KI,  FACTORY_KD };
+PID_t rampPID = { 3, 0.002,  75};
 /*
  *  From: https://github.com/rocketscream/TinyReflowController/blob/master/TinyReflowController.ino
  *  divided by 5 because the output range there is 0-2000 and here 0-100
  */
-const PID_t preheatPID = { 3, 0.001,  75 };
-const PID_t soakPID = { 1.9, 0.002,  125 }; //autotune recommendation
-const PID_t reflowPID = { 10, 0.00,  25 };
+//const PID_t preheatPID = { 3, 0.001,  75 };
+//const PID_t soakPID = { 1.9, 0.002,  125 }; //autotune recommendation
+//const PID_t reflowPID = { 10, 0.00,  25 };
 
 //PID_t heaterPID = { 4.00, 0.05,  2.00 };
 PID_t fanPID    = { 10.00, 0.00, 0.00 };
@@ -164,13 +165,13 @@ typedef struct settings_t {
  * https://www.renesas.com/en-eu/support/products-common/lead/specific-info/rt/heatproof.html
  * Kester https://muse.union.edu/nguyenh/2014/07/02/day-12/
  */
-//name; rampToSoak; soak; rampUp; peak; rampDown; coolDown;
+//name; rampToSoak; soak; rampUp; peak; rampDown; coolDown; CRC
 const profile_t romProfiles[] {
-    {"Sn63Pb37", 100, 150, 120, 165, 45, 230, 20, 230, 50, 170, 110, 50},
-    {"Sn63Pb37-K", 100, 150, 90, 180, 25, 215, 20, 215, 25, 185, 130, 50},
-    {"SAC305", 100, 150, 90, 200, 35, 240, 20, 240, 35, 200, 150, 50},
-    {"0Pb-Wurth", 100, 150, 120, 200, 40, 245, 20, 245, 60, 180, 130, 50},
-    {"Sn42Bi58", 100, 120, 90, 145, 20, 170, 20, 170, 20, 145, 95, 50},
+    {"Sn63Pb37", 100, 150, 120, 165, 45, 230, 20, 230, 50, 170, 110, 50, 0},
+    {"Sn63Pb37-K", 100, 150, 90, 180, 25, 215, 20, 215, 25, 185, 130, 50, 0},
+    {"SAC305", 100, 150, 90, 200, 35, 240, 20, 240, 35, 200, 150, 50, 0},
+    {"0Pb-Wurth", 100, 150, 120, 200, 40, 245, 20, 245, 60, 180, 130, 50, 0},
+    {"Sn42Bi58", 100, 120, 90, 145, 20, 170, 20, 170, 20, 145, 95, 50, 0},
 //    {"Sn42Bi58", 0.8, 6.0, 100, 135, 90, 160, 10, 0},
     //{"0Pb-Renesas", 90, 150, 120, 200, 20, 255, 20, 255, 20, 180, 60, 50}
 };

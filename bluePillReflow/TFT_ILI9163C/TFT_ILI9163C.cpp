@@ -280,11 +280,11 @@ void TFT_ILI9163C::begin(void) {
 	if (_rst != 0) {
 		pinMode(_rst, OUTPUT);
 		digitalWrite(_rst, HIGH);
-		delay(500);
+		delay(2);
 		digitalWrite(_rst, LOW);
-		delay(500);
+		delay(2);
 		digitalWrite(_rst, HIGH);
-		delay(500);
+		delay(120);
 	}
 
 /*
@@ -414,7 +414,7 @@ void TFT_ILI9163C::chipInit() {
 
 	#else
 	writecommand(CMD_SWRESET);//software reset
-	delay(500);
+	delay(150);
 	writecommand(CMD_SLPOUT);//exit sleep
 	delay(5);
 	writecommand(CMD_PIXFMT);//Set Color Format 16bit   
@@ -624,17 +624,19 @@ void TFT_ILI9163C::clearScreen(uint16_t color) {
 		endProc();
 	#elif defined(SPI_MODE_DMA)	
 		fillScanline(color, _GRAMHEIGH);
-		setAddr(0x00,0x00,_GRAMWIDTH,_GRAMHEIGH);//go home
+		setAddrWindow(0x00,0x00,_GRAMWIDTH,_GRAMHEIGH);//go home
 		*rsport |=  rspinmask;
 		*csport &= ~cspinmask;
-		for (px = 0; px < _GRAMWIDTH; px++){
+/*		for (px = 0; px < _GRAMWIDTH; px++){
 			writeScanline(_GRAMHEIGH);
 		}
+*/
+		writeScanline(_GRAMWIDTH * _GRAMHEIGH);
 		*csport |= cspinmask;
 
 	#else
 		//writecommand(CMD_RAMWR);
-		setAddr(0x00,0x00,_GRAMWIDTH,_GRAMHEIGH);//go home
+		setAddrWindow(0x00,0x00,_GRAMWIDTH,_GRAMHEIGH);//go home
 		for (px = 0;px < _GRAMSIZE; px++){
 			writedata16(color);
 		}
@@ -642,7 +644,7 @@ void TFT_ILI9163C::clearScreen(uint16_t color) {
 }
 
 void TFT_ILI9163C::startPushData(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
-	setAddr(x0,y0,x1,y1);
+	setAddrWindow(x0,y0,x1,y1);
 }
 
 void TFT_ILI9163C::pushData(uint16_t color) {
@@ -713,7 +715,7 @@ void TFT_ILI9163C::setCursor(int16_t x, int16_t y) {
 void TFT_ILI9163C::drawPixel(int16_t x, int16_t y, uint16_t color) {
 	if (boundaryCheck(x,y)) return;
 	if ((x < 0) || (y < 0)) return;
-	setAddr(x,y,x+1,y+1);
+	setAddrWindow(x,y,x+1,y+1);
 	#if defined(__MK20DX128__) || defined(__MK20DX256__)
 		writedata16_last(color);
 		endProc();
@@ -739,9 +741,9 @@ void TFT_ILI9163C::drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color
 		drawPixel(x, y, color);
 		return;
 	}
-	setAddr(x,y,x,(y+h)-1);
+	setAddrWindow(x,y,x,(y+h)-1);
 	#if !defined SPI_MODE_DMA
-	while (h-- > 1) {
+	while (h-- > 0) {
 		#if defined(__MK20DX128__) || defined(__MK20DX256__)
 		if (h == 0){
 			writedata16_last(color);
@@ -776,9 +778,9 @@ void TFT_ILI9163C::drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color
 		drawPixel(x, y, color);
 		return;
 	}
-	setAddr(x,y,(x+w)-1,y);
+	setAddrWindow(x,y,(x+w)-1,y);
 	#if !defined SPI_MODE_DMA
-	while (w-- > 1) {
+	while (w-- > 0) {
 		#if defined(__MK20DX128__) || defined(__MK20DX256__)
 		if (w == 0){
 			writedata16_last(color);
@@ -813,7 +815,7 @@ void TFT_ILI9163C::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t
 		return;
 	}
 	#if !defined SPI_MODE_DMA	
-	setAddr(x,y,(x+w)-1,(y+h)-1);
+	setAddrWindow(x,y,(x+w)-1,(y+h)-1);
 	for (y = h;y > 0;y--) {
 		for (x = w;x > 0;x--) {
 			#if defined(__MK20DX128__) || defined(__MK20DX256__)
@@ -828,14 +830,17 @@ void TFT_ILI9163C::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t
 	}
 	endProc();
 	#else //SPI_MODE_DMA
-	setAddr(x,y,(x+w)-1,(y+h)-1);
+	setAddrWindow(x,y,(x+w)-1,(y+h)-1);
 	if (w < h) swap(w, h);
 	fillScanline(color, w);
 	*rsport |=  rspinmask;
 	*csport &= ~cspinmask;
+	/*
 	for (y = h;y > 0;y--) {
 		writeScanline(w);
 	}
+	*/
+	writeScanline(w * h);
 	*csport |= cspinmask;
 	#endif
 }
@@ -1324,7 +1329,7 @@ void TFT_ILI9163C::drawCircle(int16_t x0, int16_t y0, int16_t r, uint16_t color)
 
 // Sets first n pixels in scanline buffer to the specified color
 //    __attribute__((always_inline))
-void TFT_ILI9163C::fillScanline(uint16_t color, size_t n) {
+inline __attribute__((always_inline)) void TFT_ILI9163C::fillScanline(uint16_t color, size_t n) {
 #if defined SPI_16BIT
 	//color = (color << 8) | (color >> 8); 
 //    for (uint16_t i = 0; i < n; i ++)
@@ -1344,8 +1349,8 @@ void TFT_ILI9163C::fillScanline(uint16_t color, size_t n) {
 
 // Enables CS, sets DC and writes n-bytes from the scanline buffer via DMA
 // Does not disable CS
-//    inline __attribute__((always_inline))
-void TFT_ILI9163C::writeScanline(size_t n) {
+
+inline __attribute__((always_inline)) void TFT_ILI9163C::writeScanline(size_t n) {
 	if (n == 0) return;
 #if defined SPI_16BIT
     _SPI->dmaSend(_scanlineBuffer16, n, 0);	// each pixel is one halfword. circular mode

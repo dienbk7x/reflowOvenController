@@ -16,7 +16,7 @@
 					<folderInfo id="io.sloeber.core.toolChain.release.910932166.1166549852" name="/" resourcePath="">
 						<toolChain id="io.sloeber.core.toolChain.release.2039131937" name="Arduino Toolchain (Sloeber edition)" superClass="io.sloeber.core.toolChain.release">
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="io.sloeber.targetplatform.560835900" name="Arduino Target" osList="all" superClass="io.sloeber.targetplatform"/>
-							<builder buildPath="${workspace_loc:/bluePillReflow}/Release" id="io.sloeber.sketch.builder.375095133" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Arduino sketch builder" parallelBuildOn="false" superClass="io.sloeber.sketch.builder"/>
+							<builder buildPath="${workspace_loc:/bluePillReflow}/Release" id="io.sloeber.sketch.builder.375095133" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Arduino sketch builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="io.sloeber.sketch.builder"/>
 							<tool id="io.sloeber.tool.sketch.compiler.cpp.1467070722" name="Arduino C++ Compiler" superClass="io.sloeber.tool.sketch.compiler.cpp">
 								<option id="io.sloeber.compiler.cpp.sketch.option.incpath.1087342908" name="Include Paths (-I)" superClass="io.sloeber.compiler.cpp.sketch.option.incpath" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/bluePillReflow/core/core}&quot;"/>
@@ -31,7 +31,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/bluePillReflow/libraries/Wire}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/bluePillReflow/libraries/MAX6675-library/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/bluePillReflow/libraries/Adafruit-GFX-Library-master}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/bluePillReflow/libraries/Adafruit-GFX-Library}&quot;"/>
 								</option>
 								<inputType id="io.sloeber.compiler.cpp.sketch.input.467536530" name="CPP source files" superClass="io.sloeber.compiler.cpp.sketch.input"/>
 							</tool>
@@ -49,7 +48,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/bluePillReflow/libraries/Wire}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/bluePillReflow/libraries/MAX6675-library/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/bluePillReflow/libraries/Adafruit-GFX-Library-master}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/bluePillReflow/libraries/Adafruit-GFX-Library}&quot;"/>
 								</option>
 								<inputType id="io.sloeber.compiler.c.sketch.input.2004247847" name="C Source Files" superClass="io.sloeber.compiler.c.sketch.input"/>
 							</tool>
@@ -67,7 +65,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/bluePillReflow/libraries/Wire}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/bluePillReflow/libraries/MAX6675-library/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/bluePillReflow/libraries/Adafruit-GFX-Library-master}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/bluePillReflow/libraries/Adafruit-GFX-Library}&quot;"/>
 								</option>
 								<inputType id="io.sloeber.compiler.S.sketch.input.2071109850" name="Assembly source files" superClass="io.sloeber.compiler.S.sketch.input"/>
 							</tool>
