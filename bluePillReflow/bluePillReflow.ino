@@ -113,9 +113,8 @@ void killRelayPins(void) {
     /*
      * TODO: should be low to turn off,inconsistent with above
      */
-    digitalLow(PIN_FAN);
+    digitalWrite(PIN_FAN, FAN_OFF);
     digitalWrite(PIN_HEATER, HEATER_OFF);
-    //PORTD |= (1 << PIN_HEATER) | (1 << PIN_FAN); // off
 }
 
 // ----------------------------------------------------------------------------
@@ -726,7 +725,7 @@ void loop(void)
                 PID_1.SetControllerDirection(REVERSE);
                 PID_1.SetTunings(fanPID.Kp, fanPID.Ki, fanPID.Kd, P_ON_E);
                 //activeSegment = &activeProfile.coolDown;
-                Setpoint = Setpoint - 5;
+                Setpoint = max(Setpoint - 5, idleTemp);
                 if (Output < 66) Output = 66;
 /*                if (averageT1 > idleTemp){
                     targetRate = ((averageT1 - idleTemp ) / activeSegment->timeLength);
@@ -737,7 +736,7 @@ void loop(void)
 //                }
             }
 
-            if (Setpoint > idleTemp -10 ){
+            if (Setpoint > idleTemp - 5 ){
                 //updateSetpoint(true);
                 updateSetpoint(true);
             }
@@ -748,10 +747,11 @@ void loop(void)
                 Output = 0;
 #ifdef WITH_BEEPER
                 tone(PIN_BEEPER,BEEP_FREQ,500);  //End Beep
-                delay(1500);
+                delay(1000);
                 tone(PIN_BEEPER,BEEP_FREQ,500);
-                delay(1500);
+                delay(1000);
                 tone(PIN_BEEPER,BEEP_FREQ,1500);
+                delay(1500);
 #endif
             }
             break;
@@ -760,6 +760,7 @@ void loop(void)
         {
             if (stateChanged) {
                 stateChanged = false;
+                tone(PIN_BEEPER,BEEP_FREQ,100);
                 Setpoint = tuneTemp;
             }
             if (tunePreheated) {
@@ -777,23 +778,21 @@ void loop(void)
 
                 savePID();
                 */
-
+                tft.setCursor(40, 28);
+                tft.print("Recommended values:");
                 tft.setCursor(40, 40);
-                //tft.print("Kp: "); tft.print((uint32_t)(heaterPID.Kp * 100));
                 tft.print("Kp: "); tft.print(PIDTune.GetKp(), 6);
                 tft.setCursor(40, 52);
-                //tft.print("Ki: "); tft.print((uint32_t)(heaterPID.Ki * 100));
                 tft.print("Ki: "); tft.print(PIDTune.GetKi(), 6);
                 tft.setCursor(40, 64);
-                //tft.print("Kd: "); tft.print((uint32_t)(heaterPID.Kd * 100));
                 tft.print("Kd: "); tft.print(PIDTune.GetKd(), 6);
-
+                tone(PIN_BEEPER,BEEP_FREQ,1500);
                 delay (1000);
             }
             }
             else {
                 if ((averageT1 >= AUTOTUNE_TEMP - 1) && (averageT1 <= (AUTOTUNE_TEMP + 1))){
-                    if ((millis() - tunePreheatTime) > 25000) { // Wait until we have the same temp for 20 seconds
+                    if ((millis() - tunePreheatTime) > AUTOTUNE_STABLE_TIME * 1000) { // Wait until we have the same temp for 60 seconds
                         tunePreheated = true;
                     }
                 }

@@ -139,8 +139,8 @@ Done!
   #define swap(a, b) { int16_t t = a; a = b; b = t; }
 #endif
 
-#include "Arduino.h"
-#include "Print.h"
+//#include "Arduino.h"
+//#include "Print.h"
 #include <Adafruit_GFX.h>
 #include <SPI.h>
 
