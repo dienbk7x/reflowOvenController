@@ -578,7 +578,7 @@ void loop(void)
                 PID_1.SetControllerDirection(DIRECT);
                 PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd);
                 */
-                Setpoint = averageT1 + 5;
+                //Setpoint = averageT1 + 5;
 #ifdef WITH_BEEPER
                 tone(PIN_BEEPER,BEEP_FREQ,100);
 #endif
@@ -590,9 +590,9 @@ void loop(void)
              */
             if (pidAggresiveUsed == true && averageT1 + THRESHOLD_TO_CONSERVATIVE_PID > activeSegment->targetTemp){
                 pidAggresiveUsed = false;
-                PID_1.SetMode(MANUAL);
-                PID_1.SetMode(AUTOMATIC);
                 PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd);
+                PID_1.SetMode(MANUAL); // Clear old counters to start fresh
+                PID_1.SetMode(AUTOMATIC);
             }
 
             if (Setpoint < activeSegment->targetTemp){
@@ -610,6 +610,8 @@ void loop(void)
                 stateChanged = false;
                 activeSegment = &activeProfile.soak;
                 PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd, P_ON_E);
+                PID_1.SetMode(MANUAL); // Clear old counters to start fresh
+                PID_1.SetMode(AUTOMATIC);
                 targetRate = ((activeSegment->targetTemp - averageT1) / activeSegment->timeLength);
             }
 
@@ -635,7 +637,7 @@ void loop(void)
                 activeSegment = &activeProfile.rampUp;
 #ifdef FULL_POWER_RAMP
                 PID_1.SetMode(MANUAL); // Clear old counters to start fresh
-                Output = 100;
+                Output = 100; // Ramp up as fast as possible
 #else
                 PID_1.SetTunings(rampPID.Kp, rampPID.Ki, rampPID.Kd, P_ON_E);
 #endif
@@ -643,10 +645,13 @@ void loop(void)
                 targetRate = ((activeSegment->targetTemp - averageT1) / activeSegment->timeLength);
             }
 
-            if ((pidAggresiveUsed == true) && (averageT1 + THRESHOLD_TO_CONSERVATIVE_PID/2 > activeSegment->targetTemp)){
+            if ((pidAggresiveUsed == true) //
+                && (averageT1 + THRESHOLD_TO_CONSERVATIVE_PID > activeSegment->targetTemp) //
+                && (rampRate > 1.2) // We should learn this value during Autotune, 2/3 of the max Ramp rate.
+                ){
                 pidAggresiveUsed = false;
 #ifdef FULL_POWER_RAMP
-                Output = 0;
+                Output = 50;
                 PID_1.SetMode(AUTOMATIC);
 #endif
                 PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd);
@@ -660,7 +665,7 @@ void loop(void)
             /*
              * Switch to Peak stage when current temperature is within 5 degrees.
              */
-            if (averageT1 >= activeSegment->targetTemp) {
+            if (averageT1 >= activeSegment->targetTemp - 5) {
             //if (Setpoint >= activeProfile.peakTemp - 1) {
                 //Setpoint = activeSegment->targetTemp;
                 currentState = Peak;
@@ -685,7 +690,7 @@ void loop(void)
 
             if (zeroCrossTicks - stateChangedTicks >= (uint32_t)activeSegment->timeLength * TICKS_PER_SEC) {
                 currentState = RampDown;
-                Setpoint = activeProfile.rampDown.targetTemp;
+                //Setpoint = activeProfile.rampDown.targetTemp;
             }
             break;
 
@@ -736,7 +741,7 @@ void loop(void)
 //                }
             }
 
-            if (Setpoint > idleTemp - 5 ){
+            if (Setpoint > idleTemp){
                 //updateSetpoint(true);
                 updateSetpoint(true);
             }
@@ -751,7 +756,7 @@ void loop(void)
                 tone(PIN_BEEPER,BEEP_FREQ,500);
                 delay(1000);
                 tone(PIN_BEEPER,BEEP_FREQ,1500);
-                delay(1500);
+                //delay(1500);
 #endif
             }
             break;
@@ -787,7 +792,7 @@ void loop(void)
                 tft.setCursor(40, 64);
                 tft.print("Kd: "); tft.print(PIDTune.GetKd(), 6);
                 tone(PIN_BEEPER,BEEP_FREQ,1500);
-                delay (1000);
+                //delay (1000);
             }
             }
             else {

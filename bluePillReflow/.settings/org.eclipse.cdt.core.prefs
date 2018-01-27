@@ -37,7 +37,7 @@ environment/project/io.sloeber.core.toolChain.release.910932166/A.BUILD.EXTRA_FL
 environment/project/io.sloeber.core.toolChain.release.910932166/A.BUILD.EXTRA_FLAGS/value=${A.BUILD.UPLOAD_FLAGS} ${A.BUILD.CPU_FLAGS} ${A.BUILD.HS_FLAG} ${A.BUILD.COMMON_FLAGS}
 environment/project/io.sloeber.core.toolChain.release.910932166/A.BUILD.FLAGS.LDSPECS/delimiter=;
 environment/project/io.sloeber.core.toolChain.release.910932166/A.BUILD.FLAGS.LDSPECS/operation=replace
-environment/project/io.sloeber.core.toolChain.release.910932166/A.BUILD.FLAGS.LDSPECS/value=-specs\=nosys.specs -specs\=nano.specs
+environment/project/io.sloeber.core.toolChain.release.910932166/A.BUILD.FLAGS.LDSPECS/value=
 environment/project/io.sloeber.core.toolChain.release.910932166/A.BUILD.FLAGS.OPTIMIZE/delimiter=;
 environment/project/io.sloeber.core.toolChain.release.910932166/A.BUILD.FLAGS.OPTIMIZE/operation=replace
 environment/project/io.sloeber.core.toolChain.release.910932166/A.BUILD.FLAGS.OPTIMIZE/value=-Os
@@ -178,10 +178,10 @@ environment/project/io.sloeber.core.toolChain.release.910932166/A.EXTRA.TIME.DTS
 environment/project/io.sloeber.core.toolChain.release.910932166/A.EXTRA.TIME.DTS/value=0
 environment/project/io.sloeber.core.toolChain.release.910932166/A.EXTRA.TIME.LOCAL/delimiter=;
 environment/project/io.sloeber.core.toolChain.release.910932166/A.EXTRA.TIME.LOCAL/operation=replace
-environment/project/io.sloeber.core.toolChain.release.910932166/A.EXTRA.TIME.LOCAL/value=1511646587
+environment/project/io.sloeber.core.toolChain.release.910932166/A.EXTRA.TIME.LOCAL/value=1513758674
 environment/project/io.sloeber.core.toolChain.release.910932166/A.EXTRA.TIME.UTC/delimiter=;
 environment/project/io.sloeber.core.toolChain.release.910932166/A.EXTRA.TIME.UTC/operation=replace
-environment/project/io.sloeber.core.toolChain.release.910932166/A.EXTRA.TIME.UTC/value=1511668187
+environment/project/io.sloeber.core.toolChain.release.910932166/A.EXTRA.TIME.UTC/value=1513780274
 environment/project/io.sloeber.core.toolChain.release.910932166/A.EXTRA.TIME.ZONE/delimiter=;
 environment/project/io.sloeber.core.toolChain.release.910932166/A.EXTRA.TIME.ZONE/operation=replace
 environment/project/io.sloeber.core.toolChain.release.910932166/A.EXTRA.TIME.ZONE/value=-21600
