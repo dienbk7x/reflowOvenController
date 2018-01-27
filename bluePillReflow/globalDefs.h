@@ -7,8 +7,8 @@
  * Ports ON and OFF Levels
  * These defines allow to change the active level more easily.
  */
-#define HEATER_OFF  LOW
-#define HEATER_ON   HIGH
+#define HEATER_OFF  HIGH
+#define HEATER_ON   LOW
 #define FAN_OFF     HIGH
 #define FAN_ON      LOW
 
