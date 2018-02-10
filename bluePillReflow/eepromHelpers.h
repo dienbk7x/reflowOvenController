@@ -14,7 +14,7 @@ const uint16_t offsetPidConfig  = maxProfiles * sizeof(profile_t) + 4; // sizeof
 #include "extEEPROM/extEEPROM.h"
 
 
-extEEPROM myEEPROM(kbits_4, 1, 16, 0x50);
+extEEPROM myEEPROM(kbits_8, 1, 16, 0x50);
 #define eeprom_write_block(source,offset,count) myEEPROM.write((unsigned long)offset,(byte *)source,(unsigned int)count)
 #define eeprom_read_block(dest,offset,count) myEEPROM.read((unsigned long)offset,(byte *)dest,(unsigned int)count)
 #define eeprom_is_ready() true

@@ -57,10 +57,8 @@ PID_ATune PIDTune(&Input, &Output);
  */
 
 float  aTuneStep       =  30,
-    aTuneNoise      =   1,
-    aTuneStartValue =  75;  // is set to Output, i.e. 0-100% of Heater, best to match what's used
-                            // to start normal heating (75%)
-
+    aTuneNoise      =   0.5,
+    aTuneStartValue =  20;  // is set to Output only to start heating until target temp, i.e. 0-100% of Heater,
 unsigned int aTuneLookBack = 30;
 
 
@@ -365,6 +363,7 @@ void updateSetpoint(bool down = false) {
         //Setpoint += (rate / (float)TICKS_PER_SEC * (zeroCrossTicks - lastSoakTicks)) * ((down) ? -1 : 1);
         Setpoint += (targetRate / (float)TICKS_PER_SEC * (zeroCrossTicks - lastCycleTicks)) * ((down) ? -1 : 1);
         lastCycleTicks = zeroCrossTicks;
+        Setpoint = max(Setpoint,20);
     }
 }
 
@@ -426,7 +425,7 @@ void loop(void)
             menuUpdateRequest = true;
             MenuEngine.invoke();
         }
-        else if (currentState > UIMenuEnd) {
+        else if (currentState >= Preheat && currentState < CoolDown) {
             currentState = CoolDown;
         }
         break;
@@ -492,7 +491,8 @@ void loop(void)
             thermocoupleErrorCount++;
             if ((thermocoupleErrorCount > TC_ERROR_TOLERANCE) && (currentState != Edit)) {
                 abortWithError(tcStat);
-            } else thermocoupleErrorCount = 0;
+            }
+            //else thermocoupleErrorCount = 0; //this line was reseting the error count each time, so it never increased.
         }
         else {
             thermocoupleErrorCount = 0;
@@ -553,7 +553,7 @@ void loop(void)
         case Preheat:
             if (stateChanged) {
                 stateChanged = false;
-                Output = 75;
+                Output = 25;
                 Setpoint = idleTemp;
                 PID_1.SetMode(MANUAL); // Clear old counters to start fresh
                 PID_1.SetMode(AUTOMATIC);
@@ -577,23 +577,36 @@ void loop(void)
                 PID_1.SetMode(AUTOMATIC);
                 PID_1.SetControllerDirection(DIRECT);
                 PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd);
-                */
+                 */
                 //Setpoint = averageT1 + 5;
 #ifdef WITH_BEEPER
                 tone(PIN_BEEPER,BEEP_FREQ,100);
 #endif
                 activeSegment = &activeProfile.rampToSoak;
-                targetRate = ((activeSegment->targetTemp - averageT1) / activeSegment->timeLength);
+                if (activeSegment->targetTemp > averageT1){
+                    targetRate = ((activeSegment->targetTemp - averageT1) / activeSegment->timeLength);
+                }
+                else targetRate = 0; // If we are already over the temp, then there is no rate of temp increase to achieve and just stay at same temp.
             }
             /*
-             * Change to smoother PID if current temp 20 degrees from max soak temp.
+             * Change to smoother PID if current temp to max soak temp differential is smaller than THRESHOLD_TO_CONSERVATIVE_PID - THRESHOLD_HISTERESYS
              */
-            if (pidAggresiveUsed == true && averageT1 + THRESHOLD_TO_CONSERVATIVE_PID > activeSegment->targetTemp){
+            if ((pidAggresiveUsed == true) && (activeSegment->targetTemp - averageT1 < (THRESHOLD_TO_CONSERVATIVE_PID - THRESHOLD_HISTERESYS))){
                 pidAggresiveUsed = false;
                 PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd);
                 PID_1.SetMode(MANUAL); // Clear old counters to start fresh
                 PID_1.SetMode(AUTOMATIC);
             }
+            /*
+             * Change back to aggressive PID if the differential is larger than THRESHOLD_TO_CONSERVATIVE_PID + THRESHOLD_HISTERESYS
+             */
+            if ((pidAggresiveUsed == false) && (activeSegment->targetTemp - averageT1 > (THRESHOLD_TO_CONSERVATIVE_PID + THRESHOLD_HISTERESYS))){
+                pidAggresiveUsed = false;
+                PID_1.SetTunings(rampPID.Kp, rampPID.Ki, rampPID.Kd);
+                PID_1.SetMode(MANUAL); // Clear old counters to start fresh
+                PID_1.SetMode(AUTOMATIC);
+            }
+
 
             if (Setpoint < activeSegment->targetTemp){
                 updateSetpoint();
@@ -612,13 +625,15 @@ void loop(void)
                 PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd, P_ON_E);
                 PID_1.SetMode(MANUAL); // Clear old counters to start fresh
                 PID_1.SetMode(AUTOMATIC);
-                targetRate = ((activeSegment->targetTemp - averageT1) / activeSegment->timeLength);
+                if (activeSegment->targetTemp > averageT1){
+                    targetRate = ((activeSegment->targetTemp - averageT1) / activeSegment->timeLength);
+                }
+                else targetRate = 0; // If we are already over the temp, then there is no rate of temp increase to achieve and just stay at same temp.
             }
 
 
             if (Setpoint < activeSegment->targetTemp){
                 updateSetpoint();
-
             }
 
             /*
@@ -635,29 +650,27 @@ void loop(void)
                 stateChanged = false;
                 lastCycleTicks = zeroCrossTicks;
                 activeSegment = &activeProfile.rampUp;
-#ifdef FULL_POWER_RAMP
+            #ifdef FULL_POWER_RAMP
                 PID_1.SetMode(MANUAL); // Clear old counters to start fresh
                 Output = 100; // Ramp up as fast as possible
-#else
+            #else
                 PID_1.SetTunings(rampPID.Kp, rampPID.Ki, rampPID.Kd, P_ON_E);
-#endif
+            #endif
                 pidAggresiveUsed = true;
                 targetRate = ((activeSegment->targetTemp - averageT1) / activeSegment->timeLength);
             }
 
             if ((pidAggresiveUsed == true) //
                 && (averageT1 + THRESHOLD_TO_CONSERVATIVE_PID > activeSegment->targetTemp) //
-                && (rampRate > 1.2) // We should learn this value during Autotune, 2/3 of the max Ramp rate.
-                ){
+                && (rampRate > 0.3) // We should learn this value during Autotune, 2/3 of the max Ramp rate.
+            ){
                 pidAggresiveUsed = false;
-#ifdef FULL_POWER_RAMP
+                PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd);
+        #ifdef FULL_POWER_RAMP
                 Output = 50;
                 PID_1.SetMode(AUTOMATIC);
-#endif
-                PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd);
+        #endif
             }
-
-
             if (Setpoint < activeSegment->targetTemp){
                 updateSetpoint();
             }
@@ -666,7 +679,7 @@ void loop(void)
              * Switch to Peak stage when current temperature is within 5 degrees.
              */
             if (averageT1 >= activeSegment->targetTemp - 5) {
-            //if (Setpoint >= activeProfile.peakTemp - 1) {
+                //if (Setpoint >= activeProfile.peakTemp - 1) {
                 //Setpoint = activeSegment->targetTemp;
                 currentState = Peak;
             }
@@ -678,15 +691,10 @@ void loop(void)
                 lastCycleTicks = zeroCrossTicks;
                 activeSegment = &activeProfile.peak;
                 Setpoint = activeSegment->targetTemp;
-
-                //targetRate = ((activeSegment->targetTemp - averageT1) / activeSegment->timeLength);
+                PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd);
+                Output = 15;
+                PID_1.SetMode(AUTOMATIC);
             }
-
-            /*if (Setpoint < activeSegment->targetTemp){
-                updateSetpoint();
-            }
-            */
-            //Setpoint = 0;
 
             if (zeroCrossTicks - stateChangedTicks >= (uint32_t)activeSegment->timeLength * TICKS_PER_SEC) {
                 currentState = RampDown;
@@ -732,13 +740,13 @@ void loop(void)
                 //activeSegment = &activeProfile.coolDown;
                 Setpoint = max(Setpoint - 5, idleTemp);
                 if (Output < 66) Output = 66;
-/*                if (averageT1 > idleTemp){
+                /*                if (averageT1 > idleTemp){
                     targetRate = ((averageT1 - idleTemp ) / activeSegment->timeLength);
                 }
                 else{
-*/
-                    targetRate = DEFAULT_RAMP_DOWN_RATE;
-//                }
+                 */
+                targetRate = DEFAULT_RAMP_DOWN_RATE;
+                //                }
             }
 
             if (Setpoint > idleTemp){
@@ -765,40 +773,44 @@ void loop(void)
         {
             if (stateChanged) {
                 stateChanged = false;
-                tone(PIN_BEEPER,BEEP_FREQ,100);
+                tone(PIN_BEEPER,BEEP_FREQ,700);
                 Setpoint = tuneTemp;
             }
             if (tunePreheated) {
-            int8_t val = PIDTune.Runtime();
+                int8_t val = PIDTune.Runtime();
 
-            if (val != 0) {
-                currentState = CoolDown;
-            }
+                if (val != 0) {
+                    currentState = CoolDown;
+                }
 
-            if (currentState != Tune) { // we're done, set the tuning parameters
-                /*
+                if (currentState != Tune) { // we're done, set the tuning parameters
+                    /*
                 heaterPID.Kp = PIDTune.GetKp();
                 heaterPID.Ki = PIDTune.GetKi();
                 heaterPID.Kd = PIDTune.GetKd();
 
                 savePID();
-                */
-                tft.setCursor(40, 28);
-                tft.print("Recommended values:");
-                tft.setCursor(40, 40);
-                tft.print("Kp: "); tft.print(PIDTune.GetKp(), 6);
-                tft.setCursor(40, 52);
-                tft.print("Ki: "); tft.print(PIDTune.GetKi(), 6);
-                tft.setCursor(40, 64);
-                tft.print("Kd: "); tft.print(PIDTune.GetKd(), 6);
-                tone(PIN_BEEPER,BEEP_FREQ,1500);
-                //delay (1000);
-            }
+                     */
+                    tft.setCursor(40, 28);
+                    tft.print("Recommended values:");
+                    tft.setCursor(40, 40);
+                    tft.print("Kp: "); tft.print(PIDTune.GetKp(), 6);
+                    tft.setCursor(40, 52);
+                    tft.print("Ki: "); tft.print(PIDTune.GetKi(), 6);
+                    tft.setCursor(40, 64);
+                    tft.print("Kd: "); tft.print(PIDTune.GetKd(), 6);
+                    tone(PIN_BEEPER,BEEP_FREQ,1500);
+                    //delay (1000);
+                }
             }
             else {
-                if ((averageT1 >= AUTOTUNE_TEMP - 1) && (averageT1 <= (AUTOTUNE_TEMP + 1))){
-                    if ((millis() - tunePreheatTime) > AUTOTUNE_STABLE_TIME * 1000) { // Wait until we have the same temp for 60 seconds
+                if ((averageT1 >= tuneTemp - ATUNE_HISTERESYS) && (averageT1 <= (tuneTemp + ATUNE_HISTERESYS))){
+                    if ((millis() - tunePreheatTime) > ATUNE_STABLE_TIME * 1000) { // Wait until we have the same temp for 60 seconds
                         tunePreheated = true;
+                        PID_1.SetMode(MANUAL);
+                        //aTuneStep = 100 - Output; // This will make the step reach 100% power if needed
+                        //PIDTune.SetOutputStep(aTuneStep);
+                        // may need to add this Output = 50;
                     }
                 }
                 else {
@@ -834,34 +846,34 @@ void loop(void)
     //if (Setpoint > Input + 50) abortWithError(10); // if we're 50 degree cooler than setpoint, abort
     //if (Input > Setpoint + 50) abortWithError(20); // or 50 degrees hotter, also abort
 
-if(currentState != Tune) {
-    PID_1.Compute();
+    if(currentState != Tune) {
+        PID_1.Compute();
 
-    // decides which control signal is fed to the output for this cycle
-    if (   currentState != RampDown
-        && currentState != CoolDown
-        && currentState != Settings
-        && currentState != Complete
-        && currentState != Idle
-        && currentState != Settings
-        && currentState != Edit)
-    {
+        // decides which control signal is fed to the output for this cycle
+        if (   currentState != RampDown
+            && currentState != CoolDown
+            && currentState != Settings
+            && currentState != Complete
+            && currentState != Idle
+            && currentState != Settings
+            && currentState != Edit)
+        {
+            heaterValue = Output;
+            fanValue = fanAssistSpeed;
+        }
+        else if ( currentState == RampDown || currentState == CoolDown ){
+            heaterValue = 0;
+            fanValue = Output;
+        }
+        else {
+            heaterValue = 0;
+            fanValue = 0;
+        }
+    }
+    else {
         heaterValue = Output;
         fanValue = fanAssistSpeed;
     }
-    else if ( currentState == RampDown || currentState == CoolDown ){
-        heaterValue = 0;
-        fanValue = Output;
-    }
-    else {
-        heaterValue = 0;
-        fanValue = 0;
-    }
-}
-else {
-    heaterValue = Output;
-    fanValue = fanAssistSpeed;
-}
 
     Channels[CHANNEL_HEATER].target = heaterValue;
 

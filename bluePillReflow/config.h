@@ -93,20 +93,25 @@ Experimental method to tune PID:
 > Decrease Ki by a factor of 2-4.
 
 */
-#define PID_SAMPLE_TIME 500
-#define FACTORY_KP 1.9     //0.6// 1.75 //4.0
-#define FACTORY_KI 0.002    //0.01 // 0.03 // 0.05
-#define FACTORY_KD 125       //19.70 //3.0//2.0
-#define THRESHOLD_TO_CONSERVATIVE_PID 20
+#define PID_SAMPLE_TIME     500
+#define FACTORY_KP          0.6     //0.6// 1.75 //4.0
+#define FACTORY_KI          0.002    //0.01 // 0.03 // 0.05
+#define FACTORY_KD          19       //19.70 //3.0//2.0
+#define RAMP_KP             3
+#define RAMP_KI             0.002
+#define RAMP_KD             75
+#define THRESHOLD_TO_CONSERVATIVE_PID   20
+#define THRESHOLD_HISTERESYS            2
 
-#define AUTOTUNE_TEMP   150.0   // Autotune temp on boot up. Can be changed on menu. Should be at least the minimum soak temp.
-#define AUTOTUNE_TIME   600     // Estimated time, just for drawing the graph. Will wrap the screen after this time
-#define THERMAL_INERTIA 15      // in degrees celsius
-#define AUTOTUNE_STABLE_TIME 60 // Minimum amount of seconds the temp has to be stable in target before
+#define ATUNE_TEMP          150.0   // Autotune temp on boot up. Can be changed on menu. Should be at least the minimum soak temp.
+#define ATUNE_HISTERESYS    2.0
+#define ATUNE_TIME          600     // Estimated time, just for drawing the graph. Will wrap the screen after this time
+#define ATUNE_STABLE_TIME   60 // Minimum amount of seconds the temp has to be stable in target before
                                 // the autotuning function is actually started
 
+#define THERMAL_INERTIA     15      // in degrees celsius
 
-#define MAX_CYCLE_TIME 600
+#define MAX_CYCLE_TIME 900
 
 
 

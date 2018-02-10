@@ -83,18 +83,18 @@ void itoa10(int32_t n, char *result, bool preventMinus = false) {
 // ----------------------------------------------------------------------------
 
 uint8_t countDigits(uint32_t n) {
-  uint8_t d = 1;
   switch (n) {
-    case  100000000 ... 999999999:  d++;
-    case   10000000 ... 99999999:   d++;
-    case    1000000 ... 9999999:    d++;
-    case     100000 ... 999999:     d++;
-    case      10000 ... 99999:      d++;
-    case       1000 ... 9999:       d++;
-    case        100 ... 999:        d++;
-    case         10 ... 99:         d++;
-  }
-  return d;
+  case         0UL ...         9UL : return  1 ;
+  case        10UL ...        99UL : return  2 ;
+  case       100UL ...       999UL : return  3 ;
+  case      1000UL ...      9999UL : return  4 ;
+  case     10000UL ...     99999UL : return  5 ;
+  case    100000UL ...    999999UL : return  6 ;
+  case   1000000UL ...   9999999UL : return  7 ;
+  case  10000000UL ...  99999999UL : return  8 ;
+  case 100000000UL ... 999999999UL : return  9 ;
+  default                          : return 10 ;
+  };
 }
 
 // ----------------------------------------------------------------------------

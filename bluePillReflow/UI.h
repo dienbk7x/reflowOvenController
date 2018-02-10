@@ -232,7 +232,7 @@ bool menuExit(const Menu::Action_t a) {
 
 // ----------------------------------------------------------------------------
 
-bool menuDummy(const Menu::Action_t a) {
+bool menuDummy(const Menu::Action_t a __attribute__((unused))) {
   return true;
 }
 
@@ -304,13 +304,13 @@ bool getItemValueLabel(const Menu::Item_t *mi, char *label) {
   }
   else {
     if (isTempSetting (mi)) {
-      itostr(label, *iValue, "\367C");
+      itostr(label, *iValue, (char *)"\367C");
     }
     else if (isTimeSetting (mi)) {
-      itostr(label, *iValue, "s");
+      itostr(label, *iValue, (char *)"s");
     }
     else if (mi == &miFanSettings) {
-      itostr(label, *iValue, "%");
+      itostr(label, *iValue, (char *)"%");
     }
   }
 
@@ -444,6 +444,7 @@ bool menu_editNumericalValue(const Menu::Action_t action) {
 
     return true;
   }
+  return false; // should not get to here
 }
 
 
@@ -511,14 +512,14 @@ bool menu_factoryReset(const Menu::Action_t action) {
     }
   }
 
-  if (action == Menu::actionTrigger) { // do it
+  else if (action == Menu::actionTrigger) { // do it
     factoryReset();
     tft.fillScreen(WHITE);
     MenuEngine.navigate(MenuEngine.getParent());
     return false;
   }
 
-  if (action == Menu::actionParent) {
+  else if (action == Menu::actionParent) {
     if (currentState == Edit) { // leave edit mode only, returning to menu
       tft.fillRect(10, tft.height()-38, tft.width(), 20, WHITE);
       //  tft.fillScreen(WHITE);
@@ -527,6 +528,7 @@ bool menu_factoryReset(const Menu::Action_t action) {
       return false;
     }
   }
+  return true;
 #endif // PIDTUNE
 }
 
@@ -637,6 +639,7 @@ bool menu_saveLoadProfile(const Menu::Action_t action) {
       return false;
     }
   }
+  return true;
 #endif // PIDTUNE
 }
 
@@ -658,7 +661,6 @@ bool menu_cycleStart(const Menu::Action_t action) {
     initialProcessDisplay = false;
     menuUpdateRequest = false;
   }
-
   return true;
 }
 
@@ -786,8 +788,8 @@ if(currentState != Tune) {
 }
 else {
     tft.print("Tuning ");
-    pxPerC = h / (AUTOTUNE_TEMP * TEMPERATURE_WINDOW) * 100.0;
-    pxPerSec = (float)w / AUTOTUNE_TIME;
+    pxPerC = h / (ATUNE_TEMP * TEMPERATURE_WINDOW) * 100.0;
+    pxPerSec = (float)w / ATUNE_TIME;
 }
 
 
@@ -808,7 +810,7 @@ else {
         t = (activeProfile.peak.targetTemp * TEMPERATURE_WINDOW);
     }
     else {
-        t = AUTOTUNE_TEMP * TEMPERATURE_WINDOW;
+        t = ATUNE_TEMP * TEMPERATURE_WINDOW;
     }
     tft.setTextColor(tft.Color565(0xa0, 0xa0, 0xa0));
     tft.setTextSize(1);

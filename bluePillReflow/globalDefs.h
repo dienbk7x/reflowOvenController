@@ -14,9 +14,10 @@
 
 /*
  * USE Flash to store settings and profiles
+ * Otherwise you need an EEPROM
  */
 
-#define FLASH_SETTINGS
+//#define FLASH_SETTINGS
 
 /*
  * Profile name length
@@ -44,7 +45,7 @@ const char * ver = "3.3";
 
 bool tunePreheated = false;
 uint32 tunePreheatTime = 0;
-int16_t tuneTemp = 130;
+int16_t tuneTemp = ATUNE_TEMP;
 
 float temperature;
 uint8_t tcStat = 0;
@@ -67,7 +68,7 @@ typedef struct PID_t {
 } PID_t;
 
 PID_t heaterPID = { FACTORY_KP, FACTORY_KI,  FACTORY_KD };
-PID_t rampPID = { 3, 0.002,  75};
+PID_t rampPID = { RAMP_KP, RAMP_KI,  RAMP_KD};
 /*
  *  From: https://github.com/rocketscream/TinyReflowController/blob/master/TinyReflowController.ino
  *  divided by 5 because the output range there is 0-2000 and here 0-100
