@@ -67,6 +67,12 @@ typedef struct PID_t {
   float Kd;
 } PID_t;
 
+typedef struct PID_int_t {
+  uint16_t Kp;
+  uint16_t Ki;
+  uint16_t Kd;
+} PID_int_t;
+
 PID_t heaterPID = { FACTORY_KP, FACTORY_KI,  FACTORY_KD };
 PID_t rampPID = { RAMP_KP, RAMP_KI,  RAMP_KD};
 /*

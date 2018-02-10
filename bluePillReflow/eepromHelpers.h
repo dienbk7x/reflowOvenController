@@ -5,7 +5,8 @@
 // EEPROM offsets
 const uint16_t offsetFanSpeed   = maxProfiles * sizeof(profile_t) + 2; // one byte
 const uint16_t offsetProfileNum = maxProfiles * sizeof(profile_t) + 3; // one byte
-const uint16_t offsetPidConfig  = maxProfiles * sizeof(profile_t) + 4; // sizeof(PID_t)
+const uint16_t offsetHeaterPidConfig  = maxProfiles * sizeof(profile_t) + 4; // sizeof(PID_t)
+const uint16_t offsetRampPidConfig  = offsetHeaterPidConfig + sizeof(PID_int_t);
 
 
 #ifndef FLASH_SETTINGS
@@ -20,17 +21,26 @@ extEEPROM myEEPROM(kbits_8, 1, 16, 0x50);
 #define eeprom_is_ready() true
 
 
-
-
 bool savePID() {
+  PID_int_t temp_PID = {(uint16_t)(heaterPID.Kp * 100), (uint16_t)(heaterPID.Ki*1000), (uint16_t)(heaterPID.Kd*100)};
   do {} while (!(eeprom_is_ready()));
-  eeprom_write_block(&heaterPID, offsetPidConfig, sizeof(PID_t));
+  eeprom_write_block(&temp_PID, offsetHeaterPidConfig, sizeof(PID_int_t));
+
+  temp_PID = {(uint16_t)(rampPID.Kp * 100), (uint16_t)(rampPID.Ki*1000), (uint16_t)(rampPID.Kd*100)};
+  do {} while (!(eeprom_is_ready()));
+  eeprom_write_block(&temp_PID, offsetRampPidConfig, sizeof(PID_int_t));
   return true;
 }
 
 bool loadPID() {
+  PID_int_t temp_PID;
   do {} while (!(eeprom_is_ready()));
-  eeprom_read_block(&heaterPID, offsetPidConfig, sizeof(PID_t));
+  eeprom_read_block(&temp_PID, offsetHeaterPidConfig, sizeof(PID_int_t));
+  heaterPID = {(float)temp_PID.Kp / 100, (float)temp_PID.Ki / 1000, (float)temp_PID.Kd / 100};
+
+  do {} while (!(eeprom_is_ready()));
+  eeprom_read_block(&temp_PID, offsetRampPidConfig, sizeof(PID_int_t));
+  rampPID = {(float)temp_PID.Kp / 100, (float)temp_PID.Ki / 1000, (float)temp_PID.Kd / 100};
   return true;  
 }
 
