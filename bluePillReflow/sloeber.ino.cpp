@@ -2,10 +2,11 @@
 //This is a automatic generated file
 //Please do not modify this file
 //If you touch this file your change will be overwritten during the next build
-//This file has been generated on 2018-02-10 11:06:19
+//This file has been generated on 2018-02-11 21:40:18
 
 #include "Arduino.h"
 #include "globalDefs.h"
+#include <libmaple/iwdg.h>
 #include "helpers.h"
 #include "SimpleKalmanFilter/src/SimpleKalmanFilter.h"
 #include "eepromHelpers.h"
@@ -28,9 +29,17 @@ void zeroCrossingIsr(void) ;
 void timerIsr(void) ;
 void abortWithError(int error) ;
 void setup() ;
+void setupWatchdog();
 void toggleAutoTune() ;
-void loop(void)  ;
+void loop(void) ;
+void handleEncoder() ;
+void handleButton();
+void updateDisplay();
+void updateTemp(uint32_t& deltaT);
+void processState();
+void updateOutputs();
 void saveProfile(unsigned int targetProfile, bool quiet) ;
+void safetyChecks();
 bool firstRun() ;
 
 #include "bluePillReflow.ino"

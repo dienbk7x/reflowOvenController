@@ -13,11 +13,10 @@
 #define FAN_ON      LOW
 
 /*
- * USE Flash to store settings and profiles
- * Otherwise you need an EEPROM
+ * Helper for Cycle time.
  */
-
-//#define FLASH_SETTINGS
+#define CYCLE_ELLAPSED_TICKS (zeroCrossTicks - startCycleZeroCrossTicks)
+#define STATE_ELLAPSED_TICKS (zeroCrossTicks - stateChangedTicks)
 
 /*
  * Profile name length
@@ -31,17 +30,16 @@
  */
 
 #if defined(MAINS_50HZ)
-  static const uint8_t DEFAULT_LOOP_DELAY = 89;  // should be about 16% less for 60Hz mains
-  static const uint8_t TICKS_PER_SEC      = 100; // for 50Hz mains:  2*50Hz = 100 ticks per second
+static const uint8_t DEFAULT_LOOP_DELAY = 89;  // should be about 16% less for 60Hz mains
+static const uint8_t TICKS_PER_SEC      = 100; // for 50Hz mains:  2*50Hz = 100 ticks per second
 #elif defined(MAINS_60HZ)
-  static const uint8_t DEFAULT_LOOP_DELAY = 74;  // 60Hz mains = 74?
-  static const uint8_t TICKS_PER_SEC      = 120; // for 60Hz mains:  2*60Hz = 120 ticks per second
+static const uint8_t DEFAULT_LOOP_DELAY = 74;  // 60Hz mains = 74?
+static const uint8_t TICKS_PER_SEC      = 120; // for 60Hz mains:  2*60Hz = 120 ticks per second
+static const uint8_t TICKS_PER_UPDATE   = 30; // 25 before
+static const uint8_t TICKS_TO_REDRAW    = 60; //
 #endif
 
-static const uint8_t TICKS_PER_UPDATE     = 30; // 25 before
-static const uint8_t TICKS_TO_REDRAW      = 50; // 
-
-const char * ver = "3.3";
+const char * ver = "4.0a";
 
 bool tunePreheated = false;
 uint32 tunePreheatTime = 0;
@@ -62,15 +60,15 @@ float targetRate = 0;
 
 // ----------------------------------
 typedef struct PID_t {
-  float Kp;
-  float Ki;
-  float Kd;
+		float Kp;
+		float Ki;
+		float Kd;
 } PID_t;
 
 typedef struct PID_int_t {
-  uint16_t Kp;
-  uint16_t Ki;
-  uint16_t Kd;
+		uint16_t Kp;
+		uint16_t Ki;
+		uint16_t Kd;
 } PID_int_t;
 
 PID_t heaterPID = { FACTORY_KP, FACTORY_KI,  FACTORY_KD };
@@ -83,7 +81,6 @@ PID_t rampPID = { RAMP_KP, RAMP_KI,  RAMP_KD};
 //const PID_t soakPID = { 1.9, 0.002,  125 }; //autotune recommendation
 //const PID_t reflowPID = { 10, 0.00,  25 };
 
-//PID_t heaterPID = { 4.00, 0.05,  2.00 };
 PID_t fanPID    = { 10.00, 0.00, 0.00 };
 
 int idleTemp = 50; // the temperature at which to consider the oven safe to leave to cool naturally
@@ -97,23 +94,23 @@ int16_t fanAssistSpeed = FACTORY_FAN_ASSIST_SPEED; // default fan speed
 // state machine
 
 typedef enum State{
-  None     = 0,
-  Idle     = 1,
-  Settings = 2,
-  Edit     = 3,
+	None     = 0,
+	Idle     = 1,
+	Settings = 2,
+	Edit     = 3,
 
-  UIMenuEnd = 9,
-  Preheat = 10,
-  RampToSoak,
-  Soak,
-  RampUp,
-  Peak,
-  RampDown,
-  CoolDown,
+	UIMenuEnd = 9,
+	Preheat = 10,
+	RampToSoak,
+	Soak,
+	RampUp,
+	Peak,
+	RampDown,
+	CoolDown,
 
-  Complete = 20,
+	Complete = 20,
 
-  Tune = 30
+	Tune = 30
 } State;
 
 State currentState  = Idle;
@@ -123,19 +120,19 @@ State currentState  = Idle;
  */
 
 typedef struct segment_t {
-    int16_t timeLength;
-    int16_t targetTemp;
+		int16_t timeLength;
+		int16_t targetTemp;
 } segment_t;
 
 typedef struct profile_t {
-    char name[NAME_LENGTH];
-    segment_t rampToSoak;
-    segment_t soak;
-    segment_t rampUp;
-    segment_t peak;
-    segment_t rampDown;
-    segment_t coolDown;
-    uint16_t  checksum;
+		char name[NAME_LENGTH];
+		segment_t rampToSoak;
+		segment_t soak;
+		segment_t rampUp;
+		segment_t peak;
+		segment_t rampDown;
+		segment_t coolDown;
+		uint16_t  checksum;
 } profile_t;
 
 /*
@@ -151,36 +148,48 @@ typedef struct profile_t {
   int16_t peakDuration;
   uint8_t checksum;
 } profile_t;
-*/
+ */
 
-const uint8_t maxProfiles = 5; // a profile takes 32bytes, so 512bytes of eeprom holds over 10
+/*
+ * Calculate max number of profiles. Leave some 64bytes at the end for PID, fan, and any future needs.
+ */
+#ifdef EEPROM_SIZE
+const uint8_t maxProfiles = (EEPROM_SIZE - 64) / (sizeof(profile_t)); // a profile takes 38bytes, so 512bytes of eeprom holds over 10
+#else
+const uint8_t maxProfiles = 5; // when using flash.
+#endif
 
+/*
+ * This is not used yet
+ */
 typedef struct settings_t {
-    profile_t profiles[maxProfiles];
-    PID_t heaterPID;
-    uint8_t fanValue;
-    uint8_t defaultProfileId;
+		profile_t profiles[maxProfiles];
+		PID_t heaterPID;
+		uint8_t fanValue;
+		uint8_t defaultProfileId;
 } settings_t;
 
 /*
  * This variable holds 4 default profiles in ROM. Can be extended to hold more.
- * Those profiles can be saved to the 4 first EEPROM slots with Factory Reset.
- * Any other profile in EEPROM will not be modified.
- * TODO: Add menu option to edit and display the profile names, and modify to save to Flash instead.
+ * Those profiles can be saved to the first EEPROM slots with Factory Reset.
+ * It's good to have the one empty profile at the end, so can be loaded and saved to eeprom slots
+ * to clear them.
  *
  * http://www.we-online.com/web/en/index.php/show/media/07_electronic_components/download_center_1/reach___rohs/Standard_Reflow_Wave_Solderprofil_LF.pdf
  * https://www.renesas.com/en-eu/support/products-common/lead/specific-info/rt/heatproof.html
  * Kester https://muse.union.edu/nguyenh/2014/07/02/day-12/
+ *
+ * We
  */
-//name; rampToSoak; soak; rampUp; peak; rampDown; coolDown; CRC
-const profile_t romProfiles[] {
-    {"Sn63Pb37", 100, 150, 120, 165, 45, 230, 20, 230, 50, 170, 110, 50, 0},
-    {"Sn63Pb37-K", 100, 150, 90, 180, 25, 215, 20, 215, 25, 185, 130, 50, 0},
-    {"SAC305", 100, 150, 90, 200, 35, 240, 20, 240, 35, 200, 150, 50, 0},
-    {"0Pb-Wurth", 100, 150, 120, 200, 40, 245, 20, 245, 60, 180, 130, 50, 0},
-    {"Sn42Bi58", 100, 120, 90, 145, 20, 170, 20, 170, 20, 145, 95, 50, 0},
-//    {"Sn42Bi58", 0.8, 6.0, 100, 135, 90, 160, 10, 0},
-    //{"0Pb-Renesas", 90, 150, 120, 200, 20, 255, 20, 255, 20, 180, 60, 50}
+// name; rampToSoak; soak; rampUp; peak; rampDown; coolDown; CRC
+const profile_t romProfiles[6] {
+	{"Sn63Pb37", 100, 150, 120, 165, 45, 230, 20, 230, 50, 170, 110, 50, 0},
+	{"Sn63Pb37-K", 100, 150, 90, 180, 25, 215, 20, 215, 25, 185, 130, 50, 0},
+	{"SAC305", 100, 150, 90, 200, 35, 240, 20, 240, 35, 200, 150, 50, 0},
+	{"0Pb-Wurth", 100, 150, 120, 200, 40, 245, 20, 245, 60, 180, 130, 50, 0},
+	{"Sn42Bi58", 100, 120, 90, 145, 20, 170, 20, 170, 20, 145, 95, 50, 0},
+	//    {"Sn42Bi58", 0.8, 6.0, 100, 135, 90, 160, 10, 0},
+	//{"0Pb-Renesas", 90, 150, 120, 200, 20, 255, 20, 255, 20, 180, 60, 50}
 };
 
 
@@ -200,7 +209,7 @@ void makeDefaultProfile() {
   activeProfile.peakTemp        = DEFAULT_PEAK_TEPM;
   activeProfile.peakDuration    = DEFAULT_PEAK_DURATION;
 }
-*/
+ */
 
 
 #endif //GLOBAL_DEFS_H

@@ -11,6 +11,38 @@
 #define WITH_CHECKSUM 1     // Check checksum in the profiles.
 #define FULL_POWER_RAMP 1   // Apply 100% power during rampup rather than PID
 
+#define USE_WATCHDOG			// Use hardware watchdog to cause reset in case the problem locks up
+
+/*
+ * Check extEEROM.h for valid eeprom sizes.
+ */
+
+#define EEPROM_SIZE 1024
+
+#if EEPROM_SIZE == 1024
+#define EEPROM_SIZE_KB kbits_8
+#elif EEPROM_SIZE == 2048
+#define EEPROM_SIZE_KB kbits_16
+#elif EEPROM_SIZE == 4096
+#define EEPROM_SIZE_KB kbits_32
+
+#endif
+
+#if     (EEPROM_SIZE == 256) || (EEPROM_SIZE == 512) || (EEPROM_SIZE == 1024) || (EEPROM_SIZE == 204)
+#define EEPROM_PAGE_SIZE 16
+#else
+#define EEPROM_PAGE_SIZE 32
+#endif
+
+#ifndef EEPROM_SIZE
+/*
+ * USE Flash to store settings and profiles
+ * Otherwise you need an EEPROM
+ */
+#define FLASH_SETTINGS
+#endif
+
+
 
 // run a calibration loop that measures how many timer ticks occur between 2 zero corssings
 // FIXME: does not work reliably at the moment, so a oscilloscope-determined value is used.
@@ -57,7 +89,7 @@ static const uint16_t BEEP_FREQ = 3000; //1976; // B6 note
 static const char PIN_ZX        = PA10; // pin for zero crossing detector
 static const char INT_ZX        = PIN_ZX; // interrupt for zero crossing detector
 
-static const uint8_t NUM_TEMP_READINGS  = 2; // This used to be 5. Reduced to 2 thanks to using Kalman Filter. Seems stable.
+static const uint8_t NUM_TEMP_READINGS  = 3; // This used to be 5. Reduced to 3 thanks to using Kalman Filter. Seems stable.
 static const uint8_t TC_ERROR_TOLERANCE = 5; // allow for n consecutive errors due to noisy power supply before bailing out
 static const float   TEMP_COMPENSATION  = 1.0; // correction factor to match temperature measured with other device
 
@@ -92,27 +124,28 @@ Experimental method to tune PID:
 > Increase Ki until oscillations start.
 > Decrease Ki by a factor of 2-4.
 
-*/
+ */
 #define PID_SAMPLE_TIME     500
-#define FACTORY_KP          0.6     //0.6// 1.75 //4.0
+#define FACTORY_KP          2.18     //0.6// 1.75 //4.0
 #define FACTORY_KI          0.002    //0.01 // 0.03 // 0.05
-#define FACTORY_KD          19       //19.70 //3.0//2.0
+#define FACTORY_KD          123.44       //19.70 //3.0//2.0
 #define RAMP_KP             3
 #define RAMP_KI             0.002
 #define RAMP_KD             75
 #define THRESHOLD_TO_CONSERVATIVE_PID   20
 #define THRESHOLD_HISTERESYS            2
 
-#define ATUNE_TEMP          150.0   // Autotune temp on boot up. Can be changed on menu. Should be at least the minimum soak temp.
+
+#define ATUNE_TEMP          170.0   // Autotune temp on boot up. Can be changed on menu. Should be at least the minimum soak temp.
 #define ATUNE_HISTERESYS    2.0
-#define ATUNE_TIME          600     // Estimated time, just for drawing the graph. Will wrap the screen after this time
+#define ATUNE_TIME          1200     // Estimated time, just for drawing the graph. Will wrap the screen after this time
 #define ATUNE_STABLE_TIME   60 // Minimum amount of seconds the temp has to be stable in target before
-                                // the autotuning function is actually started
+// the autotuning function is actually started
 
 #define THERMAL_INERTIA     15      // in degrees celsius
 
-#define MAX_CYCLE_TIME 900
-
+#define MAX_CYCLE_TIME 			900
+#define MAX_TEMP_ABORT			275
 
 
 #endif // CONFIG_H
