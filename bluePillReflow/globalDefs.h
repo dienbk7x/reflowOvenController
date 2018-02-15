@@ -56,6 +56,7 @@ float displaySetpoint;
 uint8_t fanValue;
 uint8_t heaterValue;
 float rampRate = 0;
+float maxRampRate = 0;
 float targetRate = 0;
 
 // ----------------------------------

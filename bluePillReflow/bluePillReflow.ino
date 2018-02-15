@@ -80,8 +80,8 @@ typedef struct {
 Temp_t airTemp[NUM_TEMP_READINGS];
 
 float readingsT1[NUM_TEMP_READINGS]; // the readings used to make a stable temp rolling average
-float runningTotalRampRate;
-float rateOfRise = 0;          // the result that is displayed
+//float runningTotalRampRate;
+//float rateOfRise = 0;          // the result that is displayed
 float totalT1 = 0;             // the running total
 float averageT1 = 0;           // the average
 uint8_t idx = 0;              // the index of the current reading
@@ -291,7 +291,7 @@ void setup() {
 	}
 
 	// initialize moving average filter
-	runningTotalRampRate = temperature * NUM_TEMP_READINGS;
+	//runningTotalRampRate = temperature * NUM_TEMP_READINGS;
 	for(int i = 0; i < NUM_TEMP_READINGS; i++) {
 		airTemp[i].temp = temperature;
 	}
@@ -379,7 +379,7 @@ void updateSetpoint(bool down = false) {
 		//Setpoint += (rate / (float)TICKS_PER_SEC * (zeroCrossTicks - lastSoakTicks)) * ((down) ? -1 : 1);
 		Setpoint += (targetRate / (float)TICKS_PER_SEC * (zeroCrossTicks - lastCycleTicks)) * ((down) ? -1 : 1);
 		lastCycleTicks = zeroCrossTicks;
-		Setpoint = max(Setpoint,20);
+		Setpoint = max(Setpoint,idleTemp);
 	}
 }
 
@@ -601,6 +601,7 @@ void updateTemp(uint32_t& deltaT){
 		float timeDiff = collectTicks / (float)(TICKS_PER_SEC);
 
 		rampRate = tempDiff / timeDiff;
+		maxRampRate = max(rampRate, maxRampRate);
 
 		//Input = averageT1; // update the variable the PID reads
 		Input = temperature; // using output from Kalman filter, should reduce lag over using an average.
@@ -618,6 +619,7 @@ void processState(){
 		if (stateChanged) {
 			stateChanged = false;
 			Output = 25;
+			maxRampRate = 0;
 			Setpoint = idleTemp;
 			PID_1.SetMode(MANUAL); // Clear old counters to start fresh
 			PID_1.SetMode(AUTOMATIC);
@@ -626,7 +628,7 @@ void processState(){
 			pidAggresiveUsed = true;
 			tone(PIN_BEEPER,BEEP_FREQ,100);
 		}
-		if ( Input >= idleTemp - 5 ){
+		if ( Input >= idleTemp - 2){
 			currentState = RampToSoak;
 		}
 		break;
@@ -644,30 +646,35 @@ void processState(){
 			 */
 			//Setpoint = Input + 5;
 #ifdef WITH_BEEPER
-			tone(PIN_BEEPER,BEEP_FREQ,100);
+			tone(PIN_BEEPER,BEEP_FREQ,200);
 #endif
 			activeSegment = &activeProfile.rampToSoak;
-			if (activeSegment->targetTemp > Input){
+			if (Input < activeSegment->targetTemp){
+				Setpoint = Input;
 				targetRate = ((activeSegment->targetTemp - Input) / activeSegment->timeLength);
 			}
-			else targetRate = 0; // If we are already over the temp, then there is no rate of temp increase to achieve and just stay at same temp.
+			else {
+				Setpoint = activeSegment->targetTemp;
+				targetRate = 0; // If we are already over the temp, then there is no rate of temp increase to achieve and just stay at same temp.
+			}
 		}
 		/*
 		 * Change to smoother PID if current temp to max soak temp differential is smaller than THRESHOLD_TO_CONSERVATIVE_PID - THRESHOLD_HISTERESYS
 		 */
-		if ((pidAggresiveUsed == true) && (activeSegment->targetTemp - Input < (THRESHOLD_TO_CONSERVATIVE_PID - THRESHOLD_HISTERESYS))){
+		if ((pidAggresiveUsed == true) && ((activeSegment->targetTemp - Input) < (THRESHOLD_TO_CONSERVATIVE_PID - THRESHOLD_HISTERESYS))){
 			pidAggresiveUsed = false;
-			PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd);
 			PID_1.SetMode(MANUAL); // Clear old counters to start fresh
+			PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd);
 			PID_1.SetMode(AUTOMATIC);
 		}
 		/*
 		 * Change back to aggressive PID if the differential is larger than THRESHOLD_TO_CONSERVATIVE_PID + THRESHOLD_HISTERESYS
 		 */
-		if ((pidAggresiveUsed == false) && (activeSegment->targetTemp - Input > (THRESHOLD_TO_CONSERVATIVE_PID + THRESHOLD_HISTERESYS))){
-			pidAggresiveUsed = false;
-			PID_1.SetTunings(rampPID.Kp, rampPID.Ki, rampPID.Kd);
+		if ((pidAggresiveUsed == false) && \
+				(activeSegment->targetTemp - Input > (THRESHOLD_TO_CONSERVATIVE_PID + THRESHOLD_HISTERESYS))){
+			pidAggresiveUsed = true;
 			PID_1.SetMode(MANUAL); // Clear old counters to start fresh
+			PID_1.SetTunings(rampPID.Kp, rampPID.Ki, rampPID.Kd);
 			PID_1.SetMode(AUTOMATIC);
 		}
 
@@ -676,7 +683,8 @@ void processState(){
 			updateSetpoint();
 		}
 
-		if (Input >= activeSegment->targetTemp - 1) {
+		if (Input >= activeSegment->targetTemp - 2 && \
+				(STATE_ELLAPSED_TICKS >= (uint32_t)(activeSegment->timeLength - 20) * TICKS_PER_SEC)) {
 			currentState = Soak;
 		}
 		break;
@@ -686,8 +694,8 @@ void processState(){
 			lastCycleTicks = zeroCrossTicks;
 			stateChanged = false;
 			activeSegment = &activeProfile.soak;
-			PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd, P_ON_E);
 			PID_1.SetMode(MANUAL); // Clear old counters to start fresh
+			PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd, P_ON_E);
 			PID_1.SetMode(AUTOMATIC);
 			if (activeSegment->targetTemp > Input){
 				targetRate = ((activeSegment->targetTemp - Input) / activeSegment->timeLength);
@@ -699,14 +707,26 @@ void processState(){
 		if (Setpoint < activeSegment->targetTemp){
 			updateSetpoint();
 		}
-
+		/*
+		 * If we are getting close to the RampUp temp, but not heating up very fast
+		 * turn to 100% power.
+		 * TODO: This time should be calculated on a learning cycle
+		 * measuring how much time from Off to 75% of the max RampRate.
+		 */
+		if ((Input >= (activeSegment->targetTemp - THRESHOLD_TO_CONSERVATIVE_PID)) && rampRate < (maxRampRate * 0.75) \
+				&& (STATE_ELLAPSED_TICKS >= (uint32_t)(activeSegment->timeLength - 20) * TICKS_PER_SEC)){
+			PID_1.SetMode(MANUAL); // Clear old counters to start fresh
+			Output = 100;
+		}
 		/*
 		 * If we have been at least the minimum time in soak mode and have reached soakTemB
 		 * move to the next stage
 		 */
-		if ((Input >= activeSegment->targetTemp - 2) && (STATE_ELLAPSED_TICKS >= (uint32_t)activeSegment->timeLength * TICKS_PER_SEC)) {
+		if ((Input >= activeSegment->targetTemp - 2) \
+				&& (STATE_ELLAPSED_TICKS >= (uint32_t)activeSegment->timeLength * TICKS_PER_SEC)) {
 			currentState = RampUp;
 		}
+
 		break;
 
 	case RampUp:
@@ -718,7 +738,9 @@ void processState(){
 			PID_1.SetMode(MANUAL); // Clear old counters to start fresh
 			Output = 100; // Ramp up as fast as possible
 #else
+			PID_1.SetMode(MANUAL);
 			PID_1.SetTunings(rampPID.Kp, rampPID.Ki, rampPID.Kd, P_ON_E);
+			PID_1.SetMode(AUTOMATIC);
 #endif
 			pidAggresiveUsed = true;
 			targetRate = ((activeSegment->targetTemp - Input) / activeSegment->timeLength);
@@ -726,8 +748,7 @@ void processState(){
 
 		if ((pidAggresiveUsed == true) //
 				&& (Input + THRESHOLD_TO_CONSERVATIVE_PID > activeSegment->targetTemp) //
-				&& (rampRate > 0.3) // We should learn this value during Autotune, 2/3 of the max Ramp rate.
-		){
+				&& (rampRate > maxRampRate/2)){ // We should learn this value during Autotune, 1/2 of the max Ramp rate.
 			pidAggresiveUsed = false;
 			PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd);
 #ifdef FULL_POWER_RAMP
@@ -755,12 +776,22 @@ void processState(){
 			lastCycleTicks = zeroCrossTicks;
 			activeSegment = &activeProfile.peak;
 			Setpoint = activeSegment->targetTemp;
-			PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd);
-			Output = 15;
-			PID_1.SetMode(AUTOMATIC);
-		}
+			if (rampRate < maxRampRate/2){
+				PID_1.SetMode(MANUAL);
+				Output = 15;
+				PID_1.SetTunings(heaterPID.Kp, heaterPID.Ki, heaterPID.Kd);
+				PID_1.SetMode(AUTOMATIC);
+			}
+			else {
+				PID_1.SetMode(MANUAL);
+				Output = 0;
+			}
 
-		if (STATE_ELLAPSED_TICKS >= (uint32_t)activeSegment->timeLength * TICKS_PER_SEC) {
+		}
+		if ((Input >= activeSegment->targetTemp) \
+				|| (STATE_ELLAPSED_TICKS >= (uint32_t)activeSegment->timeLength * TICKS_PER_SEC)) {
+
+//		if (STATE_ELLAPSED_TICKS >= (uint32_t)activeSegment->timeLength * TICKS_PER_SEC) {
 			currentState = RampDown;
 			//Setpoint = activeProfile.rampDown.targetTemp;
 		}

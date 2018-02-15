@@ -84,7 +84,7 @@ static const char PIN_ENC_BTN   = PA2; //
 static const uint8_t ENC_STEPS_PER_NOTCH = 4;
 static const boolean IS_ENC_ACTIVE       = false; // encoder module actively fed with VCC ( seems to works bad if set to true )
 
-static const uint16_t BEEP_FREQ = 3000; //1976; // B6 note
+static const uint16_t BEEP_FREQ = 4000; //3000; //1976; // B6 note
 
 static const char PIN_ZX        = PA10; // pin for zero crossing detector
 static const char INT_ZX        = PIN_ZX; // interrupt for zero crossing detector
