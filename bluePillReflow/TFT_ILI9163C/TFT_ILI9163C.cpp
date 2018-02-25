@@ -613,8 +613,8 @@ void TFT_ILI9163C::scroll(uint16_t adrs) {
 
 //corrected! v3
 void TFT_ILI9163C::clearScreen(uint16_t color) {
-	int px;
 	#if defined(__MK20DX128__) || defined(__MK20DX256__)
+	  int px;
 		_SPI->beginTransaction(SPISettings(SPICLOCK, MSBFIRST, SPI_MODE0));
 		//writecommand_cont(CMD_RAMWR);
 		_setAddrWindow(0x00,0x00,_GRAMWIDTH,_GRAMHEIGH);
